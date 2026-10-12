@@ -33,15 +33,18 @@ func Bootstrap(config *BootstrapConfig) {
 	userRepository := repository.NewUserRepository(config.Log)
 	permissionRepository := repository.NewPermissionRepository(config.Log)
 	merchantRepository := repository.NewMerchantRepository(config.Log)
+	roleRepository := repository.NewRoleRepository(config.Log)
 
 	// Use Case
 	jwtUseCase := usecase.NewJwtUseCase(config.Config, config.Log, config.Validate, redisRepository)
 	authUseCase := usecase.NewAuthUseCase(config.DB, config.Config, config.Log, config.Validate, jwtUseCase, userRepository, redisRepository)
 	merchantUseCase := usecase.NewMerchantUseCase(config.DB, config.Log, config.Validate, merchantRepository)
+	rbacUseCase := usecase.NewRBACUseCase(config.DB, config.Log, roleRepository, permissionRepository)
 
 	// Controller
 	authController := controller.NewAuthController(authUseCase, config.Log)
 	merchantController := controller.NewMerchantController(merchantUseCase, config.Log)
+	rbacController := controller.NewRBACController(rbacUseCase, config.Log)
 
 	// Middleware
 	authMiddleware := middleware.NewAuth(config.Log, config.Config, jwtUseCase)
@@ -57,6 +60,7 @@ func Bootstrap(config *BootstrapConfig) {
 		ResponseMiddleware:  responseMiddleware,
 		AuthController:      authController,
 		MerchantController:  merchantController,
+		RBACController:      rbacController,
 	}
 	routeConfig.Setup()
 }

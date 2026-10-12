@@ -23,9 +23,25 @@ type RoleResponse struct {
 	Code        string               `json:"code"`
 	Name        string               `json:"name"`
 	Description string               `json:"description"`
-	Permissions []PermissionResponse `json:"permissions,omitempty"`
+	Permissions []PermissionResponse `json:"permissions"`
 	CreatedAt   time.Time            `json:"created_at"`
 	UpdatedAt   time.Time            `json:"updated_at"`
+}
+
+type RoleDetailResponse struct {
+	ID          uuid.UUID            `json:"id"`
+	Code        string               `json:"code"`
+	Name        string               `json:"name"`
+	Description string               `json:"description"`
+	UserCount   int64                `json:"user_count"`
+	Permissions []PermissionResponse `json:"permissions"`
+	CreatedAt   time.Time            `json:"created_at"`
+	UpdatedAt   time.Time            `json:"updated_at"`
+}
+
+type PermissionGroupResponse struct {
+	Resource    string               `json:"resource"`
+	Permissions []PermissionResponse `json:"permissions"`
 }
 
 type PermissionResponse struct {

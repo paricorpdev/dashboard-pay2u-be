@@ -18,7 +18,9 @@ INSERT INTO permissions (code, resource, action, description) VALUES
     ('merchants.update', 'merchants', 'update', 'Update merchants'),
     ('merchants.delete', 'merchants', 'delete', 'Delete merchants'),
     ('transactions.read', 'transactions', 'read', 'View transactions'),
-    ('analytics.read', 'analytics', 'read', 'View analytics')
+    ('analytics.read', 'analytics', 'read', 'View analytics'),
+    ('roles.read', 'roles', 'read', 'View roles and permissions'),
+    ('permissions.read', 'permissions', 'read', 'View permissions')
 ON CONFLICT (code) DO NOTHING;
 
 -- Link all permissions to ROLE_SUPER_ADMIN
