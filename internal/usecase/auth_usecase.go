@@ -190,7 +190,19 @@ func (u *AuthUseCase) Logout(ctx *fiber.Ctx, request *payload.LogoutUserRequest)
 		return nil, fiber.ErrBadRequest
 	}
 
-	_ = u.RedisRepository.Del(constants.PrefixJwtAccessToken + ":" + request.UUID)
+	if u.RedisRepository != nil && u.RedisRepository.Redis != nil {
+		_ = u.RedisRepository.Del(constants.PrefixJwtAccessToken + ":" + request.UUID)
+		_ = u.RedisRepository.Del(constants.PrefixJwtRefreshToken + ":" + request.UUID)
+
+		if request.Token != "" {
+			expiredMinutes := u.Config.GetInt64("jwt.time_expired")
+			if expiredMinutes <= 0 {
+				expiredMinutes = 360
+			}
+			ttl := time.Minute * time.Duration(expiredMinutes)
+			_ = u.RedisRepository.Set("jwt_blacklist:"+request.Token, []byte("1"), ttl)
+		}
+	}
 
 	return fiber.Map{
 		"message": "logged out",

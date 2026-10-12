@@ -29,7 +29,8 @@ type VerifyUserRequest struct {
 }
 
 type LogoutUserRequest struct {
-	UUID string `json:"id" validate:"required,max=100"`
+	UUID  string `json:"id" validate:"required,max=100"`
+	Token string `json:"token"`
 }
 
 type UserClaims struct {

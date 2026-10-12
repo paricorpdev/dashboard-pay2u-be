@@ -76,6 +76,13 @@ func (u *JwtUseCase) GenerateToken(claims payload.UserClaims) (*payload.LoginUse
 		return nil, err
 	}
 
+	if u.RedisRepository != nil && u.RedisRepository.Redis != nil {
+		ttl := time.Minute * time.Duration(expiredMinutes)
+		_ = u.RedisRepository.Set(constants.PrefixJwtAccessToken+":"+claims.UUID.String(), []byte(signedAccess), ttl)
+		refreshTTL := time.Minute * time.Duration(refreshExpiredMinutes)
+		_ = u.RedisRepository.Set(constants.PrefixJwtRefreshToken+":"+claims.UUID.String(), []byte(signedRefresh), refreshTTL)
+	}
+
 	return &payload.LoginUserResponse{
 		TokenType:    constants.TokenTypeBearer,
 		AccessToken:  signedAccess,
@@ -106,6 +113,25 @@ func (u *JwtUseCase) VerifyToken(tokenStr string) (*payload.UserClaims, error) {
 	parsedUUID, err := uuid.Parse(uuidStr)
 	if err != nil {
 		return nil, jwt.ErrSignatureInvalid
+	}
+
+	if u.RedisRepository != nil && u.RedisRepository.Redis != nil {
+		if blacklisted, _ := u.RedisRepository.Get("jwt_blacklist:" + tokenStr); len(blacklisted) > 0 {
+			u.Log.Warnf("Token is blacklisted (logged out) for user: %s", parsedUUID.String())
+			return nil, jwt.ErrSignatureInvalid
+		}
+
+		activeToken, err := u.RedisRepository.Get(constants.PrefixJwtAccessToken + ":" + parsedUUID.String())
+		if err == nil {
+			if len(activeToken) == 0 {
+				u.Log.Warnf("Active session not found in Redis (logged out): %s", parsedUUID.String())
+				return nil, jwt.ErrSignatureInvalid
+			}
+			if string(activeToken) != tokenStr {
+				u.Log.Warnf("Token does not match active session for user: %s", parsedUUID.String())
+				return nil, jwt.ErrSignatureInvalid
+			}
+		}
 	}
 
 	var roles []string
@@ -149,6 +175,16 @@ func (u *JwtUseCase) VerifyRefreshToken(tokenStr string) (*payload.UserClaims, e
 	parsedUUID, err := uuid.Parse(uuidStr)
 	if err != nil {
 		return nil, jwt.ErrSignatureInvalid
+	}
+
+	if u.RedisRepository != nil && u.RedisRepository.Redis != nil {
+		activeRefresh, err := u.RedisRepository.Get(constants.PrefixJwtRefreshToken + ":" + parsedUUID.String())
+		if err == nil {
+			if len(activeRefresh) == 0 || string(activeRefresh) != tokenStr {
+				u.Log.Warnf("Refresh token is invalid or logged out for user: %s", parsedUUID.String())
+				return nil, jwt.ErrSignatureInvalid
+			}
+		}
 	}
 
 	return &payload.UserClaims{
