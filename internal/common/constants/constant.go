@@ -20,19 +20,24 @@ const (
 
 // Standard Error messages (Single Source of Truth)
 const (
-	ErrInvalidRequest          = "invalid request body"
-	ErrInvalidRequestSignature = "invalid request signature"
-	ErrDataNotFound            = "data not found"
-	ErrUserNotFound            = "user not found"
-	ErrUserAlreadyExists       = "user already exists"
-	ErrEmailAlreadyExists      = "email already exists"
-	ErrUserInactive            = "user is inactive"
-	ErrRoleNotFound            = "role not found"
-	ErrUnauthorized            = "Unauthorized user"
-	ErrUsernameOrPassword      = "invalid username or password"
-	ErrFailedGenerate          = "failed to generate token"
-	ErrInternalServerError     = "internal server error"
-	ErrForbiddenAccess         = "forbidden: missing required access"
+	ErrInvalidRequest              = "invalid request body"
+	ErrInvalidRequestSignature     = "invalid request signature"
+	ErrDataNotFound                = "data not found"
+	ErrUserNotFound                = "user not found"
+	ErrUserAlreadyExists           = "user already exists"
+	ErrEmailAlreadyExists          = "email already exists"
+	ErrUserInactive                = "user is inactive"
+	ErrRoleNotFound                = "role not found"
+	ErrUnauthorized                = "Unauthorized user"
+	ErrUsernameOrPassword          = "invalid username or password"
+	ErrFailedGenerate              = "failed to generate token"
+	ErrInternalServerError         = "internal server error"
+	ErrForbiddenAccess             = "forbidden: missing required access"
+	ErrMerchantNotFound            = "merchant not found"
+	ErrMerchantCodeAlreadyExists   = "merchant code already exists"
+	ErrMerchantApiKeyAlreadyExists = "merchant api key already exists"
+	ErrMerchantHasTransactions     = "cannot delete merchant with existing transactions"
+	ErrFailedGenerateCredentials   = "failed to generate merchant credentials"
 )
 
 // Status constants
@@ -58,6 +63,7 @@ const (
 	AuditActionDeactivate = "DEACTIVATE"
 	AuditActionResetPass  = "RESET_PASSWORD"
 
-	AuditEntityUser = "users"
-	AuditEntityRole = "roles"
+	AuditEntityUser     = "users"
+	AuditEntityRole     = "roles"
+	AuditEntityMerchant = "merchants"
 )

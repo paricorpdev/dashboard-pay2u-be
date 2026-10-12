@@ -38,19 +38,28 @@ func NewRBACMiddleware(db *gorm.DB, log *logrus.Logger, permissionRepo *reposito
 		}
 
 		action := "read"
+		switch ctx.Method() {
+		case fiber.MethodPost:
+			action = "create"
+		case fiber.MethodPut, fiber.MethodPatch:
+			action = "update"
+		case fiber.MethodDelete:
+			action = "delete"
+		default:
+			action = "read"
+		}
+
 		if len(segments) > 0 {
 			for _, segment := range segments {
 				switch segment {
-				case "create", "upload", "sync":
+				case "upload", "sync":
 					action = "create"
-				case "update", "reset-password":
+				case "reset-password", "regenerate-secret":
 					action = "update"
 				case "activate":
 					action = "activate"
 				case "deactivate":
 					action = "deactivate"
-				case "delete":
-					action = "delete"
 				}
 			}
 		}

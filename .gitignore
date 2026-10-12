@@ -3,3 +3,4 @@ config.yml.back
 .claude
 bin
 *.exe
+cmd/test_*

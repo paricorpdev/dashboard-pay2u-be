@@ -32,13 +32,16 @@ func Bootstrap(config *BootstrapConfig) {
 	// Repository
 	userRepository := repository.NewUserRepository(config.Log)
 	permissionRepository := repository.NewPermissionRepository(config.Log)
+	merchantRepository := repository.NewMerchantRepository(config.Log)
 
 	// Use Case
 	jwtUseCase := usecase.NewJwtUseCase(config.Config, config.Log, config.Validate, redisRepository)
 	authUseCase := usecase.NewAuthUseCase(config.DB, config.Config, config.Log, config.Validate, jwtUseCase, userRepository, redisRepository)
+	merchantUseCase := usecase.NewMerchantUseCase(config.DB, config.Log, config.Validate, merchantRepository)
 
 	// Controller
 	authController := controller.NewAuthController(authUseCase, config.Log)
+	merchantController := controller.NewMerchantController(merchantUseCase, config.Log)
 
 	// Middleware
 	authMiddleware := middleware.NewAuth(config.Log, config.Config, jwtUseCase)
@@ -53,6 +56,7 @@ func Bootstrap(config *BootstrapConfig) {
 		RequestIDMiddleware: requestIDMiddleware,
 		ResponseMiddleware:  responseMiddleware,
 		AuthController:      authController,
+		MerchantController:  merchantController,
 	}
 	routeConfig.Setup()
 }

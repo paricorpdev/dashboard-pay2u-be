@@ -15,6 +15,7 @@ type RouteConfig struct {
 	RequestIDMiddleware fiber.Handler
 	ResponseMiddleware  fiber.Handler
 	AuthController      *controller.AuthController
+	MerchantController  *controller.MerchantController
 }
 
 func (c *RouteConfig) Setup() {
@@ -71,12 +72,7 @@ func (c *RouteConfig) SetupGuestRoute() {
 }
 
 func (c *RouteConfig) SetupRoute() {
-	// Auth middleware: verify JWT
-	c.App.Use(c.AuthMiddleware)
-	// RBAC middleware: derive resource+action from path, check DB
-	c.App.Use(c.RBACMiddleware)
-
-	v1 := c.App.Group("/api/v1")
+	v1 := c.App.Group("/api/v1", c.AuthMiddleware, c.RBACMiddleware)
 	{
 		auth := v1.Group("/auth")
 		{
@@ -86,6 +82,16 @@ func (c *RouteConfig) SetupRoute() {
 		users := v1.Group("/users")
 		{
 			users.Get("/current", c.AuthController.Current)
+		}
+
+		merchants := v1.Group("/merchants")
+		{
+			merchants.Post("", c.MerchantController.Create)
+			merchants.Get("", c.MerchantController.FindAll)
+			merchants.Get("/:id", c.MerchantController.FindByID)
+			merchants.Put("/:id", c.MerchantController.Update)
+			merchants.Delete("/:id", c.MerchantController.Delete)
+			merchants.Patch("/:id/regenerate-secret", c.MerchantController.RegenerateSecret)
 		}
 	}
 }
