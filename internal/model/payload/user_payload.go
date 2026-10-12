@@ -19,13 +19,13 @@ type UserResponse struct {
 }
 
 type RoleResponse struct {
-	ID          uuid.UUID `json:"id"`
-	Code        string    `json:"code"`
-	Name        string    `json:"name"`
-	Description string    `json:"description"`
-	Permissions []string  `json:"permissions"`
-	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at"`
+	ID          uuid.UUID            `json:"id"`
+	Code        string               `json:"code"`
+	Name        string               `json:"name"`
+	Description string               `json:"description"`
+	Permissions []PermissionResponse `json:"permissions"`
+	CreatedAt   time.Time            `json:"created_at"`
+	UpdatedAt   time.Time            `json:"updated_at"`
 }
 
 type RoleListItemResponse struct {

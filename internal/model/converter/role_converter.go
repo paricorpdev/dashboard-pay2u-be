@@ -11,14 +11,14 @@ func RoleToResponse(role *entity.Role) *payload.RoleResponse {
 		Code:        role.Code,
 		Name:        role.Name,
 		Description: role.Description,
-		Permissions: make([]string, 0),
+		Permissions: make([]payload.PermissionResponse, 0),
 		CreatedAt:   role.CreatedAt,
 		UpdatedAt:   role.UpdatedAt,
 	}
 
 	for _, permission := range role.Permissions {
 		if permission != nil {
-			response.Permissions = append(response.Permissions, permission.Code)
+			response.Permissions = append(response.Permissions, *PermissionToResponse(permission))
 		}
 	}
 
