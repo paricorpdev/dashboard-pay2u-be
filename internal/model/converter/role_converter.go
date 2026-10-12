@@ -33,6 +33,25 @@ func RolesToResponses(roles []entity.Role) []payload.RoleResponse {
 	return responses
 }
 
+func RoleToListItemResponse(role *entity.Role) *payload.RoleListItemResponse {
+	return &payload.RoleListItemResponse{
+		ID:          role.ID,
+		Code:        role.Code,
+		Name:        role.Name,
+		Description: role.Description,
+		CreatedAt:   role.CreatedAt,
+		UpdatedAt:   role.UpdatedAt,
+	}
+}
+
+func RolesToListResponses(roles []entity.Role) []payload.RoleListItemResponse {
+	responses := make([]payload.RoleListItemResponse, 0, len(roles))
+	for i := range roles {
+		responses = append(responses, *RoleToListItemResponse(&roles[i]))
+	}
+	return responses
+}
+
 func RoleToDetailResponse(role *entity.Role, userCount int64) *payload.RoleDetailResponse {
 	response := &payload.RoleDetailResponse{
 		ID:          role.ID,

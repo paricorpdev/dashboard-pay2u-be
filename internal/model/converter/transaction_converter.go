@@ -61,7 +61,13 @@ func TransactionToResponse(t *entity.Transaction) *payload.TransactionResponse {
 func TransactionsToResponses(transactions []entity.Transaction) []payload.TransactionResponse {
 	responses := make([]payload.TransactionResponse, 0, len(transactions))
 	for i := range transactions {
-		responses = append(responses, *TransactionToResponse(&transactions[i]))
+		item := TransactionToResponse(&transactions[i])
+		// Optimization: Omit long payment codes (such as 250+ char EMVCo QRIS strings) in list view to reduce bandwidth bloat.
+		// Detailed full payment code is retained in GET /api/v1/transactions/:id.
+		if item.PaymentCode != nil && len(*item.PaymentCode) > 32 {
+			item.PaymentCode = nil
+		}
+		responses = append(responses, *item)
 	}
 	return responses
 }
