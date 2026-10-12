@@ -19,10 +19,10 @@ func NewRoleRepository(log *logrus.Logger) *RoleRepository {
 	}
 }
 
-// FindAll returns all roles preloading their permissions.
+// FindAll returns all roles for lightweight listing.
 func (r *RoleRepository) FindAll(db *gorm.DB) ([]entity.Role, error) {
 	var roles []entity.Role
-	err := db.Preload("Permissions").Order("code ASC").Find(&roles).Error
+	err := db.Order("code ASC").Find(&roles).Error
 	if err != nil {
 		r.Log.Warnf("Failed to query all roles: %+v", err)
 		return nil, err
