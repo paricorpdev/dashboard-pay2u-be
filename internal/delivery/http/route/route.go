@@ -17,6 +17,7 @@ type RouteConfig struct {
 	AuthController      *controller.AuthController
 	MerchantController  *controller.MerchantController
 	RBACController      *controller.RBACController
+	AnalyticController  *controller.AnalyticController
 }
 
 func (c *RouteConfig) Setup() {
@@ -104,6 +105,14 @@ func (c *RouteConfig) SetupRoute() {
 		permissions := v1.Group("/permissions")
 		{
 			permissions.Get("", c.RBACController.FindAllPermissions)
+		}
+
+		analytics := v1.Group("/analytics")
+		{
+			analytics.Get("/summary", c.AnalyticController.GetSummary)
+			analytics.Get("/trend", c.AnalyticController.GetDailyTrend)
+			analytics.Get("/payment-methods", c.AnalyticController.GetPaymentMethodDistribution)
+			analytics.Get("/status-distribution", c.AnalyticController.GetStatusDistribution)
 		}
 	}
 }
