@@ -1,0 +1,33 @@
+app:
+  name: "Dashboard-Pay2U"
+  timezone: "UTC"
+
+web:
+  prefork: false
+  port: 8080
+
+log:
+  level: 6
+
+jwt:
+  time_expired: 360
+  refresh_time_expired: 720
+  secret_key: "secret"
+  issuer: "Dashboard-Pay2U"
+
+database:
+  postgresql:
+    username: "postgres"
+    password: "password"
+    host: "localhost"
+    port: 5432
+    name: "dashboard_pay2u"
+    pool:
+      idle: 10
+      max: 100
+      lifetime: 300
+  redis:
+    url: "redis://localhost:6379"
+    host: "localhost"
+    port: 6379
+    password: ""
