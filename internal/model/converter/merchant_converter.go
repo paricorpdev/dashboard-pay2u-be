@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/paricorpdev/dashboard-pay2u-be/internal/entity"
+	"github.com/paricorpdev/dashboard-pay2u-be/internal/helpers"
 	"github.com/paricorpdev/dashboard-pay2u-be/internal/model/payload"
 )
 
@@ -24,7 +25,13 @@ func MerchantToResponse(merchant *entity.Merchant) *payload.MerchantResponse {
 func MerchantsToResponses(merchants []entity.Merchant) []payload.MerchantResponse {
 	responses := make([]payload.MerchantResponse, 0, len(merchants))
 	for i := range merchants {
-		responses = append(responses, *MerchantToResponse(&merchants[i]))
+		res := MerchantToResponse(&merchants[i])
+		res.ApiKey = helpers.MaskApiKey(res.ApiKey)
+		if res.WebhookSecret != nil {
+			masked := helpers.MaskWebhookSecret(*res.WebhookSecret)
+			res.WebhookSecret = &masked
+		}
+		responses = append(responses, *res)
 	}
 	return responses
 }

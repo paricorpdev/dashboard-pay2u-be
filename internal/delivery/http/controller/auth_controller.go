@@ -4,6 +4,7 @@ import (
 	"github.com/paricorpdev/dashboard-pay2u-be/internal/common/constants"
 	"github.com/paricorpdev/dashboard-pay2u-be/internal/delivery/http/middleware"
 	"github.com/paricorpdev/dashboard-pay2u-be/internal/exception"
+	"github.com/paricorpdev/dashboard-pay2u-be/internal/helpers"
 	"github.com/paricorpdev/dashboard-pay2u-be/internal/logger"
 	"github.com/paricorpdev/dashboard-pay2u-be/internal/model/payload"
 	"github.com/paricorpdev/dashboard-pay2u-be/internal/usecase"
@@ -81,9 +82,12 @@ func (c *AuthController) Refresh(ctx *fiber.Ctx) error {
 
 func (c *AuthController) Logout(ctx *fiber.Ctx) error {
 	auth := middleware.GetUser(ctx)
+	authorization := ctx.Get(fiber.HeaderAuthorization)
+	token, _ := helpers.GetTokenFromBearer(authorization)
 
 	request := &payload.LogoutUserRequest{
-		UUID: auth.UUID,
+		UUID:  auth.UUID,
+		Token: token,
 	}
 
 	response, err := c.UseCase.Logout(ctx, request)

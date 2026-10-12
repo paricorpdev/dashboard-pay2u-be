@@ -1,10 +1,13 @@
 package repository
 
 import (
+	"math"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/paricorpdev/dashboard-pay2u-be/internal/entity"
+	"github.com/paricorpdev/dashboard-pay2u-be/internal/model/payload"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
@@ -48,6 +51,100 @@ type RawStatusDist struct {
 	Status string `gorm:"column:status"`
 	Count  int64  `gorm:"column:count"`
 	Amount int64  `gorm:"column:amount"`
+}
+
+func (r *TransactionRepository) FindByID(db *gorm.DB, trx *entity.Transaction, id uuid.UUID) error {
+	return db.Preload("Merchant").Preload("WebhookDispatches").Where("id = ?", id).First(trx).Error
+}
+
+func (r *TransactionRepository) FindAllWithFilter(db *gorm.DB, req *payload.QueryTransactionRequest, transactions *[]entity.Transaction) (*payload.PageMetadata, error) {
+	query := db.Model(&entity.Transaction{})
+
+	if req.Name != "" {
+		query = query.Where("LOWER(customer_name) LIKE ?", "%"+strings.ToLower(req.Name)+"%")
+	}
+	if req.Phone != "" {
+		query = query.Where("customer_phone LIKE ?", "%"+req.Phone+"%")
+	}
+	if req.Email != "" {
+		query = query.Where("LOWER(customer_email) LIKE ?", "%"+strings.ToLower(req.Email)+"%")
+	}
+	if req.PaymentMethod != "" {
+		query = query.Where("payment_method = ?", req.PaymentMethod)
+	}
+	if req.Status != "" {
+		query = query.Where("status = ?", req.Status)
+	}
+	if req.MerchantReff != "" {
+		query = query.Where("LOWER(merchant_reff) LIKE ?", "%"+strings.ToLower(req.MerchantReff)+"%")
+	}
+	if req.BillTitle != "" {
+		query = query.Where("LOWER(bill_title) LIKE ?", "%"+strings.ToLower(req.BillTitle)+"%")
+	}
+	if req.StatusPaid != nil {
+		if *req.StatusPaid {
+			query = query.Where("paid_at IS NOT NULL")
+		} else {
+			query = query.Where("paid_at IS NULL")
+		}
+	}
+	if req.MerchantID != nil && *req.MerchantID != "" {
+		if mID, err := uuid.Parse(*req.MerchantID); err == nil {
+			query = query.Where("merchant_id = ?", mID)
+		}
+	}
+	if req.StartDate != "" {
+		query = query.Where("created_at >= ?", req.StartDate)
+	}
+	if req.EndDate != "" {
+		query = query.Where("created_at <= ?", req.EndDate+" 23:59:59")
+	}
+
+	page := req.Page
+	if page < 1 {
+		page = 1
+	}
+	limit := req.Limit
+	if limit < 1 {
+		limit = 10
+	}
+	if limit > 100 {
+		limit = 100
+	}
+
+	var totalData int64
+	if err := query.Count(&totalData).Error; err != nil {
+		r.Log.Warnf("Failed to count transactions: %+v", err)
+		return nil, err
+	}
+
+	var totalPage int64 = 0
+	if totalData > 0 {
+		totalPage = int64(math.Ceil(float64(totalData) / float64(limit)))
+	}
+
+	sortBy := "created_at"
+	if req.SortBy != "" {
+		sortBy = req.SortBy
+	}
+	sortDir := "desc"
+	if strings.ToLower(req.SortDir) == "asc" {
+		sortDir = "asc"
+	}
+	query = query.Order(sortBy + " " + sortDir)
+
+	offset := (page - 1) * limit
+	if err := query.Preload("Merchant").Offset(offset).Limit(limit).Find(transactions).Error; err != nil {
+		r.Log.Warnf("Failed to find transactions: %+v", err)
+		return nil, err
+	}
+
+	return &payload.PageMetadata{
+		Page:      page,
+		PerPage:   limit,
+		TotalData: totalData,
+		TotalPage: totalPage,
+	}, nil
 }
 
 func (r *TransactionRepository) GetMonthlySummary(db *gorm.DB, start time.Time, end time.Time, merchantID *uuid.UUID) (*MonthlySummaryResult, error) {

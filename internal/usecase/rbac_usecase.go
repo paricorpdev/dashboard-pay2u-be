@@ -35,8 +35,8 @@ func NewRBACUseCase(
 	}
 }
 
-// FindAllRoles returns all available roles with their associated permissions.
-func (u *RBACUseCase) FindAllRoles(ctx *fiber.Ctx) ([]payload.RoleResponse, error) {
+// FindAllRoles returns all available roles for table/dropdown listing.
+func (u *RBACUseCase) FindAllRoles(ctx *fiber.Ctx) ([]payload.RoleListItemResponse, error) {
 	roles, err := u.RoleRepository.FindAll(u.DB)
 	if err != nil {
 		logger.WithContext(ctx, u.Log).Errorf("Failed to retrieve roles: %+v", err)
@@ -48,7 +48,7 @@ func (u *RBACUseCase) FindAllRoles(ctx *fiber.Ctx) ([]payload.RoleResponse, erro
 		return nil, fiber.ErrInternalServerError
 	}
 
-	return converter.RolesToResponses(roles), nil
+	return converter.RolesToListResponses(roles), nil
 }
 
 // FindRoleByID returns detailed role info, user count, and permissions for a selected role.

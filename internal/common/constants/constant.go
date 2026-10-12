@@ -38,6 +38,7 @@ const (
 	ErrMerchantApiKeyAlreadyExists = "merchant api key already exists"
 	ErrMerchantHasTransactions     = "cannot delete merchant with existing transactions"
 	ErrFailedGenerateCredentials   = "failed to generate merchant credentials"
+	ErrTransactionNotFound         = "transaction not found"
 )
 
 // Status constants
@@ -63,7 +64,8 @@ const (
 	AuditActionDeactivate = "DEACTIVATE"
 	AuditActionResetPass  = "RESET_PASSWORD"
 
-	AuditEntityUser     = "users"
-	AuditEntityRole     = "roles"
-	AuditEntityMerchant = "merchants"
+	AuditEntityUser        = "users"
+	AuditEntityRole        = "roles"
+	AuditEntityMerchant    = "merchants"
+	AuditEntityTransaction = "transactions"
 )
