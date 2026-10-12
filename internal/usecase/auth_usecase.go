@@ -64,7 +64,7 @@ func (u *AuthUseCase) Login(ctx *fiber.Ctx, request *payload.LoginUserRequest) (
 	}
 
 	user := new(entity.User)
-	if err := u.UserRepository.FindByUsernameInclude(tx, user, request.Username, []string{"Roles"}); err != nil {
+	if err := u.UserRepository.FindByUsernameInclude(tx, user, request.Username, []string{"Roles", "Roles.Permissions"}); err != nil {
 		logger.WithContext(ctx, u.Log).Warnf("User not found: %s", request.Username)
 		ctx.Locals(constants.Response, payload.ResponseInterface{
 			Status:       constants.ResponseNameError,
@@ -200,7 +200,7 @@ func (u *AuthUseCase) Logout(ctx *fiber.Ctx, request *payload.LogoutUserRequest)
 // GetUserByUUID fetches the current user by UUID (for /users/current).
 func (u *AuthUseCase) GetUserByUUID(ctx *fiber.Ctx, userUUID uuid.UUID) (*payload.UserResponse, error) {
 	user := new(entity.User)
-	if err := u.UserRepository.FindByID(u.DB, user, userUUID, []string{"Roles"}); err != nil {
+	if err := u.UserRepository.FindByID(u.DB, user, userUUID, []string{"Roles", "Roles.Permissions"}); err != nil {
 		logger.WithContext(ctx, u.Log).Warnf("User not found: %s", userUUID.String())
 		ctx.Locals(constants.Response, payload.ResponseInterface{
 			Status:       constants.ResponseNameError,
