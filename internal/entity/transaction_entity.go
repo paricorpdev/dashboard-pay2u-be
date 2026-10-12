@@ -33,7 +33,8 @@ type Transaction struct {
 	MerchantID       *uuid.UUID `gorm:"column:merchant_id"`
 	ProviderCallback *string    `gorm:"column:provider_callback"`
 
-	Merchant *Merchant `gorm:"foreignKey:MerchantID;references:ID"`
+	Merchant          *Merchant         `gorm:"foreignKey:MerchantID;references:ID"`
+	WebhookDispatches []WebhookDispatch `gorm:"foreignKey:TransactionID;references:ID"`
 }
 
 func (t *Transaction) TableName() string {

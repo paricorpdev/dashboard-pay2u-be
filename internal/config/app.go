@@ -42,12 +42,14 @@ func Bootstrap(config *BootstrapConfig) {
 	merchantUseCase := usecase.NewMerchantUseCase(config.DB, config.Log, config.Validate, merchantRepository)
 	rbacUseCase := usecase.NewRBACUseCase(config.DB, config.Log, roleRepository, permissionRepository)
 	analyticUseCase := usecase.NewAnalyticUseCase(config.DB, config.Log, transactionRepository, config.Config.GetString("app.timezone"))
+	transactionUseCase := usecase.NewTransactionUseCase(config.DB, config.Log, transactionRepository)
 
 	// Controller
 	authController := controller.NewAuthController(authUseCase, config.Log)
 	merchantController := controller.NewMerchantController(merchantUseCase, config.Log)
 	rbacController := controller.NewRBACController(rbacUseCase, config.Log)
 	analyticController := controller.NewAnalyticController(analyticUseCase, config.Log)
+	transactionController := controller.NewTransactionController(transactionUseCase, config.Log)
 
 	// Middleware
 	authMiddleware := middleware.NewAuth(config.Log, config.Config, jwtUseCase)
@@ -56,15 +58,16 @@ func Bootstrap(config *BootstrapConfig) {
 	responseMiddleware := middleware.NewResponseMiddleware()
 
 	routeConfig := route.RouteConfig{
-		App:                 config.App,
-		AuthMiddleware:      authMiddleware,
-		RBACMiddleware:      rbacMiddleware,
-		RequestIDMiddleware: requestIDMiddleware,
-		ResponseMiddleware:  responseMiddleware,
-		AuthController:      authController,
-		MerchantController:  merchantController,
-		RBACController:      rbacController,
-		AnalyticController:  analyticController,
+		App:                   config.App,
+		AuthMiddleware:        authMiddleware,
+		RBACMiddleware:        rbacMiddleware,
+		RequestIDMiddleware:   requestIDMiddleware,
+		ResponseMiddleware:    responseMiddleware,
+		AuthController:        authController,
+		MerchantController:    merchantController,
+		RBACController:        rbacController,
+		AnalyticController:    analyticController,
+		TransactionController: transactionController,
 	}
 	routeConfig.Setup()
 }

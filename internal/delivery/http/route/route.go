@@ -9,15 +9,16 @@ import (
 )
 
 type RouteConfig struct {
-	App                 *fiber.App
-	AuthMiddleware      fiber.Handler
-	RBACMiddleware      fiber.Handler
-	RequestIDMiddleware fiber.Handler
-	ResponseMiddleware  fiber.Handler
-	AuthController      *controller.AuthController
-	MerchantController  *controller.MerchantController
-	RBACController      *controller.RBACController
-	AnalyticController  *controller.AnalyticController
+	App                   *fiber.App
+	AuthMiddleware        fiber.Handler
+	RBACMiddleware        fiber.Handler
+	RequestIDMiddleware   fiber.Handler
+	ResponseMiddleware    fiber.Handler
+	AuthController        *controller.AuthController
+	MerchantController    *controller.MerchantController
+	RBACController        *controller.RBACController
+	AnalyticController    *controller.AnalyticController
+	TransactionController *controller.TransactionController
 }
 
 func (c *RouteConfig) Setup() {
@@ -113,6 +114,12 @@ func (c *RouteConfig) SetupRoute() {
 			analytics.Get("/trend", c.AnalyticController.GetDailyTrend)
 			analytics.Get("/payment-methods", c.AnalyticController.GetPaymentMethodDistribution)
 			analytics.Get("/status-distribution", c.AnalyticController.GetStatusDistribution)
+		}
+
+		transactions := v1.Group("/transactions")
+		{
+			transactions.Get("", c.TransactionController.FindAll)
+			transactions.Get("/:id", c.TransactionController.FindByID)
 		}
 	}
 }
