@@ -16,6 +16,7 @@ type RouteConfig struct {
 	ResponseMiddleware  fiber.Handler
 	AuthController      *controller.AuthController
 	MerchantController  *controller.MerchantController
+	RBACController      *controller.RBACController
 }
 
 func (c *RouteConfig) Setup() {
@@ -92,6 +93,17 @@ func (c *RouteConfig) SetupRoute() {
 			merchants.Put("/:id", c.MerchantController.Update)
 			merchants.Delete("/:id", c.MerchantController.Delete)
 			merchants.Patch("/:id/regenerate-secret", c.MerchantController.RegenerateSecret)
+		}
+
+		roles := v1.Group("/roles")
+		{
+			roles.Get("", c.RBACController.FindAllRoles)
+			roles.Get("/:id", c.RBACController.FindRoleByID)
+		}
+
+		permissions := v1.Group("/permissions")
+		{
+			permissions.Get("", c.RBACController.FindAllPermissions)
 		}
 	}
 }
