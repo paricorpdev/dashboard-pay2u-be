@@ -5,4 +5,3 @@ bin
 *.exe
 cmd/test_*
 postman/
-
