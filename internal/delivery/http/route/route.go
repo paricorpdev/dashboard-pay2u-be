@@ -75,7 +75,8 @@ func (c *RouteConfig) SetupGuestRoute() {
 }
 
 func (c *RouteConfig) SetupRoute() {
-	v1 := c.App.Group("/api/v1", c.AuthMiddleware, c.RBACMiddleware)
+	// Protected routes: require valid JWT token (AuthMiddleware)
+	v1 := c.App.Group("/api/v1", c.AuthMiddleware)
 	{
 		auth := v1.Group("/auth")
 		{
@@ -87,39 +88,43 @@ func (c *RouteConfig) SetupRoute() {
 			users.Get("/current", c.AuthController.Current)
 		}
 
-		merchants := v1.Group("/merchants")
+		// RBAC routes: require valid token and permission check (RBACMiddleware)
+		rbac := v1.Group("", c.RBACMiddleware)
 		{
-			merchants.Post("", c.MerchantController.Create)
-			merchants.Get("", c.MerchantController.FindAll)
-			merchants.Get("/:id", c.MerchantController.FindByID)
-			merchants.Put("/:id", c.MerchantController.Update)
-			merchants.Delete("/:id", c.MerchantController.Delete)
-			merchants.Patch("/:id/regenerate-secret", c.MerchantController.RegenerateSecret)
-		}
+			merchants := rbac.Group("/merchants")
+			{
+				merchants.Post("", c.MerchantController.Create)
+				merchants.Get("", c.MerchantController.FindAll)
+				merchants.Get("/:id", c.MerchantController.FindByID)
+				merchants.Put("/:id", c.MerchantController.Update)
+				merchants.Delete("/:id", c.MerchantController.Delete)
+				merchants.Patch("/:id/regenerate-secret", c.MerchantController.RegenerateSecret)
+			}
 
-		roles := v1.Group("/roles")
-		{
-			roles.Get("", c.RBACController.FindAllRoles)
-			roles.Get("/:id", c.RBACController.FindRoleByID)
-		}
+			roles := rbac.Group("/roles")
+			{
+				roles.Get("", c.RBACController.FindAllRoles)
+				roles.Get("/:id", c.RBACController.FindRoleByID)
+			}
 
-		permissions := v1.Group("/permissions")
-		{
-			permissions.Get("", c.RBACController.FindAllPermissions)
-		}
+			permissions := rbac.Group("/permissions")
+			{
+				permissions.Get("", c.RBACController.FindAllPermissions)
+			}
 
-		analytics := v1.Group("/analytics")
-		{
-			analytics.Get("/summary", c.AnalyticController.GetSummary)
-			analytics.Get("/trend", c.AnalyticController.GetDailyTrend)
-			analytics.Get("/payment-methods", c.AnalyticController.GetPaymentMethodDistribution)
-			analytics.Get("/status-distribution", c.AnalyticController.GetStatusDistribution)
-		}
+			analytics := rbac.Group("/analytics")
+			{
+				analytics.Get("/summary", c.AnalyticController.GetSummary)
+				analytics.Get("/trend", c.AnalyticController.GetDailyTrend)
+				analytics.Get("/payment-methods", c.AnalyticController.GetPaymentMethodDistribution)
+				analytics.Get("/status-distribution", c.AnalyticController.GetStatusDistribution)
+			}
 
-		transactions := v1.Group("/transactions")
-		{
-			transactions.Get("", c.TransactionController.FindAll)
-			transactions.Get("/:id", c.TransactionController.FindByID)
+			transactions := rbac.Group("/transactions")
+			{
+				transactions.Get("", c.TransactionController.FindAll)
+				transactions.Get("/:id", c.TransactionController.FindByID)
+			}
 		}
 	}
 }
