@@ -48,6 +48,10 @@ func (r *MerchantRepository) HasTransactions(db *gorm.DB, merchantID uuid.UUID) 
 	return count > 0, err
 }
 
+func (r *MerchantRepository) FindOptions(db *gorm.DB, merchants *[]entity.Merchant) error {
+	return db.Select("id, name").Where("is_active = ?", true).Order("name asc").Find(merchants).Error
+}
+
 func (r *MerchantRepository) FindAll(db *gorm.DB, request *payload.QueryMerchantRequest, merchants *[]entity.Merchant) (*payload.PageMetadata, error) {
 	query := db.Model(&entity.Merchant{})
 

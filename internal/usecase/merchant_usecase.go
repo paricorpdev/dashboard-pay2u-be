@@ -39,6 +39,28 @@ func NewMerchantUseCase(
 	}
 }
 
+func (u *MerchantUseCase) GetOptions(ctx *fiber.Ctx) ([]payload.MerchantOption, error) {
+	var merchants []entity.Merchant
+	if err := u.MerchantRepository.FindOptions(u.DB, &merchants); err != nil {
+		logger.WithContext(ctx, u.Log).Errorf("Failed querying merchant options: %+v", err)
+		ctx.Locals(constants.Response, payload.ResponseInterface{
+			Status:       constants.ResponseNameError,
+			ResponseData: exception.NewHandleError(ctx, constants.ErrInternalServerError, fiber.ErrInternalServerError),
+		})
+		ctx.Status(fiber.StatusInternalServerError)
+		return nil, fiber.ErrInternalServerError
+	}
+
+	options := make([]payload.MerchantOption, 0, len(merchants))
+	for _, m := range merchants {
+		options = append(options, payload.MerchantOption{
+			ID:   m.ID.String(),
+			Name: m.Name,
+		})
+	}
+	return options, nil
+}
+
 func (u *MerchantUseCase) Create(ctx *fiber.Ctx, request *payload.CreateMerchantRequest) (*payload.MerchantResponse, error) {
 	if err := u.Validate.Struct(request); err != nil {
 		logger.WithContext(ctx, u.Log).Warnf("Invalid create merchant request: %+v", err)

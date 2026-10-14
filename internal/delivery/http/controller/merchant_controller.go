@@ -23,6 +23,20 @@ func NewMerchantController(useCase *usecase.MerchantUseCase, log *logrus.Logger)
 	}
 }
 
+func (c *MerchantController) GetOptions(ctx *fiber.Ctx) error {
+	options, err := c.UseCase.GetOptions(ctx)
+	if err != nil {
+		return err
+	}
+
+	ctx.Locals(constants.Response, payload.ResponseInterface{
+		Status:       constants.ResponseNameSuccess,
+		ResponseData: options,
+	})
+	ctx.Status(fiber.StatusOK)
+	return nil
+}
+
 func (c *MerchantController) Create(ctx *fiber.Ctx) error {
 	request := new(payload.CreateMerchantRequest)
 	if err := ctx.BodyParser(request); err != nil {

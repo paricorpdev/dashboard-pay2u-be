@@ -1,5 +1,10 @@
 package payload
 
+type MerchantOption struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+}
+
 type MerchantResponse struct {
 	ID            string  `json:"id"`
 	Code          string  `json:"code"`

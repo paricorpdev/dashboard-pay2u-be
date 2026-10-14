@@ -88,6 +88,9 @@ func (c *RouteConfig) SetupRoute() {
 			users.Get("/current", c.AuthController.Current)
 		}
 
+		// Merchant options: authenticated only, no RBAC — used for dropdown filters
+		v1.Get("/merchants/options", c.MerchantController.GetOptions)
+
 		// RBAC routes: require valid token and permission check (RBACMiddleware)
 		rbac := v1.Group("", c.RBACMiddleware)
 		{
