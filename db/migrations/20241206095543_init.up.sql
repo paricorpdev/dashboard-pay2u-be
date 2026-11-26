@@ -3,7 +3,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- =========================
 -- USERS TABLE
 -- =========================
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 
     username VARCHAR(100) NOT NULL UNIQUE,
@@ -24,7 +24,7 @@ CREATE TABLE users (
 -- =========================
 -- ROLES TABLE
 -- =========================
-CREATE TABLE roles (
+CREATE TABLE IF NOT EXISTS roles (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 
     code VARCHAR(50) NOT NULL UNIQUE,
@@ -38,7 +38,7 @@ CREATE TABLE roles (
 -- =========================
 -- PERMISSIONS TABLE
 -- =========================
-CREATE TABLE permissions (
+CREATE TABLE IF NOT EXISTS permissions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 
     code VARCHAR(100) NOT NULL UNIQUE,
@@ -54,13 +54,13 @@ CREATE TABLE permissions (
 -- =========================
 -- JOIN TABLES
 -- =========================
-CREATE TABLE user_roles (
+CREATE TABLE IF NOT EXISTS user_roles (
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     role_id UUID NOT NULL REFERENCES roles(id) ON DELETE CASCADE,
     PRIMARY KEY (user_id, role_id)
 );
 
-CREATE TABLE role_permissions (
+CREATE TABLE IF NOT EXISTS role_permissions (
     role_id UUID NOT NULL REFERENCES roles(id) ON DELETE CASCADE,
     permission_id UUID NOT NULL REFERENCES permissions(id) ON DELETE CASCADE,
     PRIMARY KEY (role_id, permission_id)
@@ -69,7 +69,7 @@ CREATE TABLE role_permissions (
 -- =========================
 -- AUDIT LOGS TABLE
 -- =========================
-CREATE TABLE audit_logs (
+CREATE TABLE IF NOT EXISTS audit_logs (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES users(id),
     action VARCHAR(50) NOT NULL,

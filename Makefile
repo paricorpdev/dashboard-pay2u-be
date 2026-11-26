@@ -43,3 +43,15 @@ run-deps:
 
 run-api-service:
 	go run cmd/api/main.go
+
+run-seed:
+	go run ./cmd/seed
+
+migrate-up: check-migrate
+	go run ./cmd/migrate up
+
+migrate-down: check-migrate
+	go run ./cmd/migrate down 1
+
+check-migrate:
+	@command -v migrate >/dev/null 2>&1 || (echo "Installing golang-migrate CLI..." && go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest)
