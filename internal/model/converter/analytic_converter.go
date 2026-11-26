@@ -62,6 +62,48 @@ func RawDailyTrendsToCompleteMonth(year int, month int, daysInMonth int, raw []r
 	return result
 }
 
+func RawDisbursementTrendsToCompleteMonth(year int, month int, daysInMonth int, raw []repository.RawDisbursementTrend) []payload.DisbursementDailyTrendItem {
+	dataMap := make(map[string]repository.RawDisbursementTrend)
+	for _, r := range raw {
+		dataMap[r.DayStr] = r
+	}
+
+	result := make([]payload.DisbursementDailyTrendItem, 0, daysInMonth)
+	for day := 1; day <= daysInMonth; day++ {
+		dateStr := fmt.Sprintf("%04d-%02d-%02d", year, month, day)
+		item := dataMap[dateStr]
+		result = append(result, payload.DisbursementDailyTrendItem{
+			Date:                   dateStr,
+			Day:                    day,
+			TotalAmount:            item.TotalAmount,
+			TotalCount:             item.TotalCount,
+			SuccessCount:           item.SuccessCount,
+			WaitingSettlementCount: item.WaitingSettlementCount,
+			ProcessingCount:        item.ProcessingCount,
+			FailedCount:            item.FailedCount,
+			CancelledCount:         item.CancelledCount,
+		})
+	}
+	return result
+}
+
+func RawDisbursementBanksToDistribution(raw []repository.RawDisbursementBankDist, totalCount int64) []payload.DisbursementBankDistributionItem {
+	result := make([]payload.DisbursementBankDistributionItem, 0, len(raw))
+	for _, item := range raw {
+		var percentage float64
+		if totalCount > 0 {
+			percentage = math.Round(float64(item.Count)/float64(totalCount)*10000) / 100
+		}
+		result = append(result, payload.DisbursementBankDistributionItem{
+			BankName:   item.BankName,
+			Count:      item.Count,
+			Amount:     item.Amount,
+			Percentage: percentage,
+		})
+	}
+	return result
+}
+
 func RawPaymentMethodToDistribution(raw []repository.RawPaymentMethodDist, totalCount int64) []payload.PaymentMethodDistributionItem {
 	result := make([]payload.PaymentMethodDistributionItem, 0, len(raw))
 	for _, item := range raw {

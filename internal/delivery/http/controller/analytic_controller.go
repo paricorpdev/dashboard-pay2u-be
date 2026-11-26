@@ -126,3 +126,72 @@ func (c *AnalyticController) GetStatusDistribution(ctx *fiber.Ctx) error {
 	ctx.Status(fiber.StatusOK)
 	return nil
 }
+
+func (c *AnalyticController) GetDisbursementSummary(ctx *fiber.Ctx) error {
+	request := new(payload.AnalyticFilterRequest)
+	if err := ctx.QueryParser(request); err != nil {
+		logger.WithContext(ctx, c.Log).Warnf("Failed to parse disbursement summary query params: %+v", err)
+		ctx.Locals(constants.Response, payload.ResponseInterface{
+			Status:       constants.ResponseNameError,
+			ResponseData: exception.NewHandleError(ctx, constants.ErrInvalidRequest, fiber.ErrBadRequest),
+		})
+		ctx.Status(fiber.StatusBadRequest)
+		return fiber.ErrBadRequest
+	}
+	response, err := c.UseCase.GetDisbursementSummary(ctx, request, middleware.DashboardAdminScope(ctx))
+	if err != nil {
+		return err
+	}
+	ctx.Locals(constants.Response, payload.ResponseInterface{
+		Status:       constants.ResponseNameSuccess,
+		ResponseData: response,
+	})
+	ctx.Status(fiber.StatusOK)
+	return nil
+}
+
+func (c *AnalyticController) GetDisbursementDailyTrend(ctx *fiber.Ctx) error {
+	request := new(payload.AnalyticFilterRequest)
+	if err := ctx.QueryParser(request); err != nil {
+		logger.WithContext(ctx, c.Log).Warnf("Failed to parse disbursement trend query params: %+v", err)
+		ctx.Locals(constants.Response, payload.ResponseInterface{
+			Status:       constants.ResponseNameError,
+			ResponseData: exception.NewHandleError(ctx, constants.ErrInvalidRequest, fiber.ErrBadRequest),
+		})
+		ctx.Status(fiber.StatusBadRequest)
+		return fiber.ErrBadRequest
+	}
+	response, err := c.UseCase.GetDisbursementDailyTrend(ctx, request, middleware.DashboardAdminScope(ctx))
+	if err != nil {
+		return err
+	}
+	ctx.Locals(constants.Response, payload.ResponseInterface{
+		Status:       constants.ResponseNameSuccess,
+		ResponseData: response,
+	})
+	ctx.Status(fiber.StatusOK)
+	return nil
+}
+
+func (c *AnalyticController) GetDisbursementBankDistribution(ctx *fiber.Ctx) error {
+	request := new(payload.AnalyticFilterRequest)
+	if err := ctx.QueryParser(request); err != nil {
+		logger.WithContext(ctx, c.Log).Warnf("Failed to parse disbursement bank query params: %+v", err)
+		ctx.Locals(constants.Response, payload.ResponseInterface{
+			Status:       constants.ResponseNameError,
+			ResponseData: exception.NewHandleError(ctx, constants.ErrInvalidRequest, fiber.ErrBadRequest),
+		})
+		ctx.Status(fiber.StatusBadRequest)
+		return fiber.ErrBadRequest
+	}
+	response, err := c.UseCase.GetDisbursementBankDistribution(ctx, request, middleware.DashboardAdminScope(ctx))
+	if err != nil {
+		return err
+	}
+	ctx.Locals(constants.Response, payload.ResponseInterface{
+		Status:       constants.ResponseNameSuccess,
+		ResponseData: response,
+	})
+	ctx.Status(fiber.StatusOK)
+	return nil
+}

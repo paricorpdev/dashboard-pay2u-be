@@ -130,6 +130,9 @@ func (c *RouteConfig) SetupRoute() {
 				analytics.Get("/trend", c.AnalyticController.GetDailyTrend)
 				analytics.Get("/payment-methods", c.AnalyticController.GetPaymentMethodDistribution)
 				analytics.Get("/status-distribution", c.AnalyticController.GetStatusDistribution)
+				analytics.Get("/disbursement-summary", c.AnalyticController.GetDisbursementSummary)
+				analytics.Get("/disbursement-trend", c.AnalyticController.GetDisbursementDailyTrend)
+				analytics.Get("/disbursement-banks", c.AnalyticController.GetDisbursementBankDistribution)
 			}
 
 			transactions := rbac.Group("/transactions")

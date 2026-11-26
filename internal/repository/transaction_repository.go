@@ -53,6 +53,34 @@ type RawStatusDist struct {
 	Amount int64  `gorm:"column:amount"`
 }
 
+type DisbursementSummaryResult struct {
+	TotalCount             int64
+	TotalVolume            int64
+	SuccessCount           int64
+	WaitingSettlementCount int64
+	ProcessingCount        int64
+	FailedCount            int64
+	CancelledCount         int64
+	TotalAdminFee          int64
+}
+
+type RawDisbursementTrend struct {
+	DayStr                 string `gorm:"column:day_str"`
+	TotalCount             int64  `gorm:"column:total_count"`
+	TotalAmount            int64  `gorm:"column:total_amount"`
+	SuccessCount           int64  `gorm:"column:success_count"`
+	WaitingSettlementCount int64  `gorm:"column:waiting_settlement_count"`
+	ProcessingCount        int64  `gorm:"column:processing_count"`
+	FailedCount            int64  `gorm:"column:failed_count"`
+	CancelledCount         int64  `gorm:"column:cancelled_count"`
+}
+
+type RawDisbursementBankDist struct {
+	BankName string `gorm:"column:bank_name"`
+	Count    int64  `gorm:"column:count"`
+	Amount   int64  `gorm:"column:amount"`
+}
+
 func (r *TransactionRepository) FindByID(db *gorm.DB, trx *entity.Transaction, id uuid.UUID, adminID *uuid.UUID) error {
 	query := db.Preload("Merchant").Preload("WebhookDispatches").Where("transactions.id = ?", id)
 	query = filterTransactionsByAdmin(query, adminID)
@@ -250,6 +278,70 @@ func (r *TransactionRepository) GetStatusDistribution(db *gorm.DB, start time.Ti
 	return rows, nil
 }
 
+func (r *TransactionRepository) GetDisbursementSummary(db *gorm.DB, start, end time.Time, merchantID, adminID *uuid.UUID) (*DisbursementSummaryResult, error) {
+	var res DisbursementSummaryResult
+	query := db.Table("disbursements").Select(`
+		COUNT(*) AS total_count,
+		COALESCE(SUM(CASE WHEN status = 'SUCCESS' THEN amount ELSE 0 END), 0) AS total_volume,
+		COALESCE(SUM(CASE WHEN status = 'SUCCESS' THEN 1 ELSE 0 END), 0) AS success_count,
+		COALESCE(SUM(CASE WHEN status = 'WAITING_SETTLEMENT' THEN 1 ELSE 0 END), 0) AS waiting_settlement_count,
+		COALESCE(SUM(CASE WHEN status = 'PROCESSING' THEN 1 ELSE 0 END), 0) AS processing_count,
+		COALESCE(SUM(CASE WHEN status = 'FAILED' THEN 1 ELSE 0 END), 0) AS failed_count,
+		COALESCE(SUM(CASE WHEN status = 'CANCELLED' THEN 1 ELSE 0 END), 0) AS cancelled_count,
+		COALESCE(SUM(CASE WHEN status = 'SUCCESS' THEN amount_admin ELSE 0 END), 0) AS total_admin_fee
+	`).Where("created_at >= ? AND created_at <= ?", start, end)
+	query = filterDisbursementsByAdmin(query, adminID)
+	if merchantID != nil {
+		query = query.Where("merchant_id = ?", *merchantID)
+	}
+	if err := query.Scan(&res).Error; err != nil {
+		r.Log.Warnf("Failed to query disbursement summary: %+v", err)
+		return nil, err
+	}
+	return &res, nil
+}
+
+func (r *TransactionRepository) GetDisbursementDailyTrend(db *gorm.DB, start, end time.Time, merchantID, adminID *uuid.UUID) ([]RawDisbursementTrend, error) {
+	var rows []RawDisbursementTrend
+	query := db.Table("disbursements").Select(`
+		TO_CHAR(created_at AT TIME ZONE 'Asia/Jakarta', 'YYYY-MM-DD') AS day_str,
+		COUNT(*) AS total_count,
+		COALESCE(SUM(CASE WHEN status = 'SUCCESS' THEN amount ELSE 0 END), 0) AS total_amount,
+		COALESCE(SUM(CASE WHEN status = 'SUCCESS' THEN 1 ELSE 0 END), 0) AS success_count,
+		COALESCE(SUM(CASE WHEN status = 'WAITING_SETTLEMENT' THEN 1 ELSE 0 END), 0) AS waiting_settlement_count,
+		COALESCE(SUM(CASE WHEN status = 'PROCESSING' THEN 1 ELSE 0 END), 0) AS processing_count,
+		COALESCE(SUM(CASE WHEN status = 'FAILED' THEN 1 ELSE 0 END), 0) AS failed_count,
+		COALESCE(SUM(CASE WHEN status = 'CANCELLED' THEN 1 ELSE 0 END), 0) AS cancelled_count
+	`).Where("created_at >= ? AND created_at <= ?", start, end)
+	query = filterDisbursementsByAdmin(query, adminID)
+	if merchantID != nil {
+		query = query.Where("merchant_id = ?", *merchantID)
+	}
+	if err := query.Group("day_str").Order("day_str ASC").Scan(&rows).Error; err != nil {
+		r.Log.Warnf("Failed to query disbursement daily trend: %+v", err)
+		return nil, err
+	}
+	return rows, nil
+}
+
+func (r *TransactionRepository) GetDisbursementBankDistribution(db *gorm.DB, start, end time.Time, merchantID, adminID *uuid.UUID) ([]RawDisbursementBankDist, error) {
+	var rows []RawDisbursementBankDist
+	query := db.Table("disbursements").Select(`
+		COALESCE(NULLIF(BTRIM(beneficiary_bank_name), ''), 'Tidak diketahui') AS bank_name,
+		COUNT(*) AS count,
+		COALESCE(SUM(CASE WHEN status = 'SUCCESS' THEN amount ELSE 0 END), 0) AS amount
+	`).Where("created_at >= ? AND created_at <= ?", start, end)
+	query = filterDisbursementsByAdmin(query, adminID)
+	if merchantID != nil {
+		query = query.Where("merchant_id = ?", *merchantID)
+	}
+	if err := query.Group("bank_name").Order("count DESC").Scan(&rows).Error; err != nil {
+		r.Log.Warnf("Failed to query disbursement bank distribution: %+v", err)
+		return nil, err
+	}
+	return rows, nil
+}
+
 func filterTransactionsByAdmin(query *gorm.DB, adminID *uuid.UUID) *gorm.DB {
 	if adminID == nil {
 		return query
@@ -257,5 +349,15 @@ func filterTransactionsByAdmin(query *gorm.DB, adminID *uuid.UUID) *gorm.DB {
 	return query.Where(`EXISTS (
 		SELECT 1 FROM merchants m
 		WHERE m.id = transactions.merchant_id AND m.admin_id = ?
+	)`, *adminID)
+}
+
+func filterDisbursementsByAdmin(query *gorm.DB, adminID *uuid.UUID) *gorm.DB {
+	if adminID == nil {
+		return query
+	}
+	return query.Where(`EXISTS (
+		SELECT 1 FROM merchants m
+		WHERE m.id = disbursements.merchant_id AND m.admin_id = ?
 	)`, *adminID)
 }

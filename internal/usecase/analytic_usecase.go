@@ -1,6 +1,7 @@
 package usecase
 
 import (
+	"math"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -148,4 +149,80 @@ func (u *AnalyticUseCase) GetStatusDistribution(ctx *fiber.Ctx, request *payload
 	}
 
 	return converter.RawStatusToDistribution(rawDistribution, summaryResult.TotalCount), nil
+}
+
+func (u *AnalyticUseCase) GetDisbursementSummary(ctx *fiber.Ctx, request *payload.AnalyticFilterRequest, adminID *uuid.UUID) (*payload.DisbursementSummaryResponse, error) {
+	month, year := helpers.ResolveMonthYear(request.Month, request.Year)
+	startDate, endDate, _ := helpers.GetMonthDateRange(year, month, u.TimeLocation)
+	merchantUUID := u.parseMerchantID(request.MerchantID)
+
+	result, err := u.TransactionRepository.GetDisbursementSummary(u.DB, startDate, endDate, merchantUUID, adminID)
+	if err != nil {
+		logger.WithContext(ctx, u.Log).Errorf("Failed to query disbursement summary: %+v", err)
+		ctx.Locals(constants.Response, payload.ResponseInterface{
+			Status:       constants.ResponseNameError,
+			ResponseData: exception.NewHandleError(ctx, constants.ErrInternalServerError, fiber.ErrInternalServerError),
+		})
+		ctx.Status(fiber.StatusInternalServerError)
+		return nil, fiber.ErrInternalServerError
+	}
+
+	var successRate float64
+	if result.TotalCount > 0 {
+		successRate = math.Round(float64(result.SuccessCount)/float64(result.TotalCount)*10000) / 100
+	}
+	return &payload.DisbursementSummaryResponse{
+		Month:                  month,
+		Year:                   year,
+		TotalVolumeAmount:      result.TotalVolume,
+		TotalDisbursementCount: result.TotalCount,
+		SuccessCount:           result.SuccessCount,
+		WaitingSettlementCount: result.WaitingSettlementCount,
+		ProcessingCount:        result.ProcessingCount,
+		FailedCount:            result.FailedCount,
+		CancelledCount:         result.CancelledCount,
+		SuccessRate:            successRate,
+		TotalAdminFee:          result.TotalAdminFee,
+	}, nil
+}
+
+func (u *AnalyticUseCase) GetDisbursementDailyTrend(ctx *fiber.Ctx, request *payload.AnalyticFilterRequest, adminID *uuid.UUID) ([]payload.DisbursementDailyTrendItem, error) {
+	month, year := helpers.ResolveMonthYear(request.Month, request.Year)
+	startDate, endDate, daysInMonth := helpers.GetMonthDateRange(year, month, u.TimeLocation)
+	merchantUUID := u.parseMerchantID(request.MerchantID)
+
+	rows, err := u.TransactionRepository.GetDisbursementDailyTrend(u.DB, startDate, endDate, merchantUUID, adminID)
+	if err != nil {
+		logger.WithContext(ctx, u.Log).Errorf("Failed to query disbursement daily trend: %+v", err)
+		ctx.Locals(constants.Response, payload.ResponseInterface{
+			Status:       constants.ResponseNameError,
+			ResponseData: exception.NewHandleError(ctx, constants.ErrInternalServerError, fiber.ErrInternalServerError),
+		})
+		ctx.Status(fiber.StatusInternalServerError)
+		return nil, fiber.ErrInternalServerError
+	}
+	return converter.RawDisbursementTrendsToCompleteMonth(year, month, daysInMonth, rows), nil
+}
+
+func (u *AnalyticUseCase) GetDisbursementBankDistribution(ctx *fiber.Ctx, request *payload.AnalyticFilterRequest, adminID *uuid.UUID) ([]payload.DisbursementBankDistributionItem, error) {
+	month, year := helpers.ResolveMonthYear(request.Month, request.Year)
+	startDate, endDate, _ := helpers.GetMonthDateRange(year, month, u.TimeLocation)
+	merchantUUID := u.parseMerchantID(request.MerchantID)
+
+	rows, err := u.TransactionRepository.GetDisbursementBankDistribution(u.DB, startDate, endDate, merchantUUID, adminID)
+	if err != nil {
+		logger.WithContext(ctx, u.Log).Errorf("Failed to query disbursement bank distribution: %+v", err)
+		ctx.Locals(constants.Response, payload.ResponseInterface{
+			Status:       constants.ResponseNameError,
+			ResponseData: exception.NewHandleError(ctx, constants.ErrInternalServerError, fiber.ErrInternalServerError),
+		})
+		ctx.Status(fiber.StatusInternalServerError)
+		return nil, fiber.ErrInternalServerError
+	}
+
+	var totalCount int64
+	for _, row := range rows {
+		totalCount += row.Count
+	}
+	return converter.RawDisbursementBanksToDistribution(rows, totalCount), nil
 }

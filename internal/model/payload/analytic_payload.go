@@ -41,3 +41,36 @@ type StatusDistributionItem struct {
 	Amount     int64   `json:"amount"`
 	Percentage float64 `json:"percentage"`
 }
+
+type DisbursementSummaryResponse struct {
+	Month                  int     `json:"month"`
+	Year                   int     `json:"year"`
+	TotalVolumeAmount      int64   `json:"total_volume_amount"`
+	TotalDisbursementCount int64   `json:"total_disbursement_count"`
+	SuccessCount           int64   `json:"success_count"`
+	WaitingSettlementCount int64   `json:"waiting_settlement_count"`
+	ProcessingCount        int64   `json:"processing_count"`
+	FailedCount            int64   `json:"failed_count"`
+	CancelledCount         int64   `json:"cancelled_count"`
+	SuccessRate            float64 `json:"success_rate"`
+	TotalAdminFee          int64   `json:"total_admin_fee"`
+}
+
+type DisbursementDailyTrendItem struct {
+	Date                   string `json:"date"`
+	Day                    int    `json:"day"`
+	TotalAmount            int64  `json:"total_amount"`
+	TotalCount             int64  `json:"total_count"`
+	SuccessCount           int64  `json:"success_count"`
+	WaitingSettlementCount int64  `json:"waiting_settlement_count"`
+	ProcessingCount        int64  `json:"processing_count"`
+	FailedCount            int64  `json:"failed_count"`
+	CancelledCount         int64  `json:"cancelled_count"`
+}
+
+type DisbursementBankDistributionItem struct {
+	BankName   string  `json:"bank_name"`
+	Count      int64   `json:"count"`
+	Amount     int64   `json:"amount"`
+	Percentage float64 `json:"percentage"`
+}
