@@ -8,6 +8,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/paricorpdev/dashboard-pay2u-be/internal/common/hashing"
+	"github.com/paricorpdev/dashboard-pay2u-be/internal/common/keys"
 	"github.com/paricorpdev/dashboard-pay2u-be/internal/config"
 	"github.com/paricorpdev/dashboard-pay2u-be/internal/entity"
 	"gorm.io/gorm"
@@ -116,6 +117,56 @@ func seed(tx *gorm.DB, username, passwordHash, fullName string, email *string) e
 		return fmt.Errorf("assign permissions to super admin role: %w", err)
 	}
 
+	if err := tx.Exec(`
+		INSERT INTO role_permissions (role_id, permission_id)
+		SELECT r.id, p.id
+		FROM roles r
+		JOIN permissions p ON p.code IN (
+			'merchants.read', 'merchants.create', 'merchants.update',
+			'transactions.read', 'analytics.read', 'roles.read', 'permissions.read'
+		)
+		WHERE r.code = 'ROLE_ADMIN'
+		ON CONFLICT DO NOTHING
+	`).Error; err != nil {
+		return fmt.Errorf("assign dashboard permissions to admin role: %w", err)
+	}
+
+	if err := ensureDashboardMSKeys(tx); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func ensureDashboardMSKeys(tx *gorm.DB) error {
+	var users []entity.User
+	if err := tx.Preload("Roles").Find(&users).Error; err != nil {
+		return fmt.Errorf("load dashboard admins for MS keys: %w", err)
+	}
+
+	for _, user := range users {
+		if user.MSMasterKey != nil && *user.MSMasterKey != "" {
+			continue
+		}
+		eligible := false
+		for _, role := range user.Roles {
+			if role.Code == "ROLE_ADMIN" || role.Code == superAdminRoleCode {
+				eligible = true
+				break
+			}
+		}
+		if !eligible {
+			continue
+		}
+
+		key, err := keys.GenerateDashboardMSKey()
+		if err != nil {
+			return fmt.Errorf("generate MS key for user %s: %w", user.ID, err)
+		}
+		if err := tx.Model(&entity.User{}).Where("id = ?", user.ID).Update("ms_master_key", key).Error; err != nil {
+			return fmt.Errorf("save MS key for user %s: %w", user.ID, err)
+		}
+	}
 	return nil
 }
 

@@ -4,6 +4,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 	"github.com/paricorpdev/dashboard-pay2u-be/internal/common/constants"
+	"github.com/paricorpdev/dashboard-pay2u-be/internal/delivery/http/middleware"
 	"github.com/paricorpdev/dashboard-pay2u-be/internal/exception"
 	"github.com/paricorpdev/dashboard-pay2u-be/internal/logger"
 	"github.com/paricorpdev/dashboard-pay2u-be/internal/model/payload"
@@ -36,7 +37,7 @@ func (c *TransactionController) FindAll(ctx *fiber.Ctx) error {
 		return fiber.ErrBadRequest
 	}
 
-	response, err := c.UseCase.FindAll(ctx, request)
+	response, err := c.UseCase.FindAll(ctx, request, middleware.DashboardAdminScope(ctx))
 	if err != nil {
 		return err
 	}
@@ -62,7 +63,7 @@ func (c *TransactionController) FindByID(ctx *fiber.Ctx) error {
 		return fiber.ErrBadRequest
 	}
 
-	response, err := c.UseCase.FindByID(ctx, id)
+	response, err := c.UseCase.FindByID(ctx, id, middleware.DashboardAdminScope(ctx))
 	if err != nil {
 		return err
 	}

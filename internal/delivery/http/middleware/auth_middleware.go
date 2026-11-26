@@ -8,6 +8,7 @@ import (
 	"github.com/paricorpdev/dashboard-pay2u-be/internal/usecase"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
@@ -69,4 +70,23 @@ func GetUser(ctx *fiber.Ctx) payload.Auth {
 	}
 
 	return auth
+}
+
+func DashboardAdminScope(ctx *fiber.Ctx) *uuid.UUID {
+	auth := GetUser(ctx)
+	isAdmin := false
+	isSuperAdmin := false
+	for _, role := range auth.Roles {
+		isAdmin = isAdmin || role == constants.RoleAdmin
+		isSuperAdmin = isSuperAdmin || role == constants.RoleSuperAdmin
+	}
+	if !isAdmin || isSuperAdmin {
+		return nil
+	}
+	id, err := uuid.Parse(auth.UUID)
+	if err != nil || id == uuid.Nil {
+		emptyID := uuid.Nil
+		return &emptyID
+	}
+	return &id
 }

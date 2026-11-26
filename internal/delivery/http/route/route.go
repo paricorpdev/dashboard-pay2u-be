@@ -15,6 +15,7 @@ type RouteConfig struct {
 	RequestIDMiddleware   fiber.Handler
 	ResponseMiddleware    fiber.Handler
 	AuthController        *controller.AuthController
+	UserController        *controller.UserController
 	MerchantController    *controller.MerchantController
 	RBACController        *controller.RBACController
 	AnalyticController    *controller.AnalyticController
@@ -94,6 +95,13 @@ func (c *RouteConfig) SetupRoute() {
 		// RBAC routes: require valid token and permission check (RBACMiddleware)
 		rbac := v1.Group("", c.RBACMiddleware)
 		{
+			users := rbac.Group("/users")
+			users.Get("", c.UserController.ListAdmins)
+			users.Post("", c.UserController.CreateAdmin)
+			users.Get("/:id", c.UserController.GetAdmin)
+			users.Put("/:id", c.UserController.UpdateAdmin)
+			users.Delete("/:id", c.UserController.DeleteAdmin)
+
 			merchants := rbac.Group("/merchants")
 			{
 				merchants.Post("", c.MerchantController.Create)
@@ -101,7 +109,8 @@ func (c *RouteConfig) SetupRoute() {
 				merchants.Get("/:id", c.MerchantController.FindByID)
 				merchants.Put("/:id", c.MerchantController.Update)
 				merchants.Delete("/:id", c.MerchantController.Delete)
-				merchants.Patch("/:id/regenerate-secret", c.MerchantController.RegenerateSecret)
+				merchants.Post("/:id/rotate-key", c.MerchantController.RotateAPIKey)
+				merchants.Post("/:id/rotate-webhook-secret", c.MerchantController.RotateWebhookSecret)
 			}
 
 			roles := rbac.Group("/roles")

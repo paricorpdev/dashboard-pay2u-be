@@ -53,12 +53,15 @@ type RawStatusDist struct {
 	Amount int64  `gorm:"column:amount"`
 }
 
-func (r *TransactionRepository) FindByID(db *gorm.DB, trx *entity.Transaction, id uuid.UUID) error {
-	return db.Preload("Merchant").Preload("WebhookDispatches").Where("id = ?", id).First(trx).Error
+func (r *TransactionRepository) FindByID(db *gorm.DB, trx *entity.Transaction, id uuid.UUID, adminID *uuid.UUID) error {
+	query := db.Preload("Merchant").Preload("WebhookDispatches").Where("transactions.id = ?", id)
+	query = filterTransactionsByAdmin(query, adminID)
+	return query.First(trx).Error
 }
 
-func (r *TransactionRepository) FindAllWithFilter(db *gorm.DB, req *payload.QueryTransactionRequest, transactions *[]entity.Transaction) (*payload.PageMetadata, error) {
+func (r *TransactionRepository) FindAllWithFilter(db *gorm.DB, req *payload.QueryTransactionRequest, transactions *[]entity.Transaction, adminID *uuid.UUID) (*payload.PageMetadata, error) {
 	query := db.Model(&entity.Transaction{})
+	query = filterTransactionsByAdmin(query, adminID)
 
 	if req.Name != "" {
 		query = query.Where("LOWER(customer_name) LIKE ?", "%"+strings.ToLower(req.Name)+"%")
@@ -147,7 +150,7 @@ func (r *TransactionRepository) FindAllWithFilter(db *gorm.DB, req *payload.Quer
 	}, nil
 }
 
-func (r *TransactionRepository) GetMonthlySummary(db *gorm.DB, start time.Time, end time.Time, merchantID *uuid.UUID) (*MonthlySummaryResult, error) {
+func (r *TransactionRepository) GetMonthlySummary(db *gorm.DB, start time.Time, end time.Time, merchantID, adminID *uuid.UUID) (*MonthlySummaryResult, error) {
 	var res MonthlySummaryResult
 	query := db.Table("transactions").
 		Select(`
@@ -159,6 +162,7 @@ func (r *TransactionRepository) GetMonthlySummary(db *gorm.DB, start time.Time, 
 			COALESCE(SUM(CASE WHEN status = 'SUCCESS' THEN amount_admin ELSE 0 END), 0) AS total_admin_fee
 		`).
 		Where("created_at >= ? AND created_at <= ?", start, end)
+	query = filterTransactionsByAdmin(query, adminID)
 
 	if merchantID != nil {
 		query = query.Where("merchant_id = ?", *merchantID)
@@ -171,7 +175,7 @@ func (r *TransactionRepository) GetMonthlySummary(db *gorm.DB, start time.Time, 
 	return &res, nil
 }
 
-func (r *TransactionRepository) GetDailyTrend(db *gorm.DB, start time.Time, end time.Time, merchantID *uuid.UUID) ([]RawDailyTrend, error) {
+func (r *TransactionRepository) GetDailyTrend(db *gorm.DB, start time.Time, end time.Time, merchantID, adminID *uuid.UUID) ([]RawDailyTrend, error) {
 	var rows []RawDailyTrend
 	query := db.Table("transactions").
 		Select(`
@@ -183,6 +187,7 @@ func (r *TransactionRepository) GetDailyTrend(db *gorm.DB, start time.Time, end 
 			COALESCE(SUM(CASE WHEN status = 'EXPIRED' THEN 1 ELSE 0 END), 0) AS expired_count
 		`).
 		Where("created_at >= ? AND created_at <= ?", start, end)
+	query = filterTransactionsByAdmin(query, adminID)
 
 	if merchantID != nil {
 		query = query.Where("merchant_id = ?", *merchantID)
@@ -197,7 +202,7 @@ func (r *TransactionRepository) GetDailyTrend(db *gorm.DB, start time.Time, end 
 	return rows, nil
 }
 
-func (r *TransactionRepository) GetPaymentMethodDistribution(db *gorm.DB, start time.Time, end time.Time, merchantID *uuid.UUID) ([]RawPaymentMethodDist, error) {
+func (r *TransactionRepository) GetPaymentMethodDistribution(db *gorm.DB, start time.Time, end time.Time, merchantID, adminID *uuid.UUID) ([]RawPaymentMethodDist, error) {
 	var rows []RawPaymentMethodDist
 	query := db.Table("transactions").
 		Select(`
@@ -206,6 +211,7 @@ func (r *TransactionRepository) GetPaymentMethodDistribution(db *gorm.DB, start 
 			COALESCE(SUM(amount_total), 0) AS amount
 		`).
 		Where("created_at >= ? AND created_at <= ?", start, end)
+	query = filterTransactionsByAdmin(query, adminID)
 
 	if merchantID != nil {
 		query = query.Where("merchant_id = ?", *merchantID)
@@ -220,7 +226,7 @@ func (r *TransactionRepository) GetPaymentMethodDistribution(db *gorm.DB, start 
 	return rows, nil
 }
 
-func (r *TransactionRepository) GetStatusDistribution(db *gorm.DB, start time.Time, end time.Time, merchantID *uuid.UUID) ([]RawStatusDist, error) {
+func (r *TransactionRepository) GetStatusDistribution(db *gorm.DB, start time.Time, end time.Time, merchantID, adminID *uuid.UUID) ([]RawStatusDist, error) {
 	var rows []RawStatusDist
 	query := db.Table("transactions").
 		Select(`
@@ -229,6 +235,7 @@ func (r *TransactionRepository) GetStatusDistribution(db *gorm.DB, start time.Ti
 			COALESCE(SUM(amount_total), 0) AS amount
 		`).
 		Where("created_at >= ? AND created_at <= ?", start, end)
+	query = filterTransactionsByAdmin(query, adminID)
 
 	if merchantID != nil {
 		query = query.Where("merchant_id = ?", *merchantID)
@@ -241,4 +248,14 @@ func (r *TransactionRepository) GetStatusDistribution(db *gorm.DB, start time.Ti
 		return nil, err
 	}
 	return rows, nil
+}
+
+func filterTransactionsByAdmin(query *gorm.DB, adminID *uuid.UUID) *gorm.DB {
+	if adminID == nil {
+		return query
+	}
+	return query.Where(`EXISTS (
+		SELECT 1 FROM merchants m
+		WHERE m.id = transactions.merchant_id AND m.admin_id = ?
+	)`, *adminID)
 }

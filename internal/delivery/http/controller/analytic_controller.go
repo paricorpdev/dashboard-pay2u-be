@@ -3,6 +3,7 @@ package controller
 import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/paricorpdev/dashboard-pay2u-be/internal/common/constants"
+	"github.com/paricorpdev/dashboard-pay2u-be/internal/delivery/http/middleware"
 	"github.com/paricorpdev/dashboard-pay2u-be/internal/exception"
 	"github.com/paricorpdev/dashboard-pay2u-be/internal/logger"
 	"github.com/paricorpdev/dashboard-pay2u-be/internal/model/payload"
@@ -35,7 +36,7 @@ func (c *AnalyticController) GetSummary(ctx *fiber.Ctx) error {
 		return fiber.ErrBadRequest
 	}
 
-	response, err := c.UseCase.GetSummary(ctx, request)
+	response, err := c.UseCase.GetSummary(ctx, request, middleware.DashboardAdminScope(ctx))
 	if err != nil {
 		return err
 	}
@@ -61,7 +62,7 @@ func (c *AnalyticController) GetDailyTrend(ctx *fiber.Ctx) error {
 		return fiber.ErrBadRequest
 	}
 
-	response, err := c.UseCase.GetDailyTrend(ctx, request)
+	response, err := c.UseCase.GetDailyTrend(ctx, request, middleware.DashboardAdminScope(ctx))
 	if err != nil {
 		return err
 	}
@@ -87,7 +88,7 @@ func (c *AnalyticController) GetPaymentMethodDistribution(ctx *fiber.Ctx) error 
 		return fiber.ErrBadRequest
 	}
 
-	response, err := c.UseCase.GetPaymentMethodDistribution(ctx, request)
+	response, err := c.UseCase.GetPaymentMethodDistribution(ctx, request, middleware.DashboardAdminScope(ctx))
 	if err != nil {
 		return err
 	}
@@ -113,7 +114,7 @@ func (c *AnalyticController) GetStatusDistribution(ctx *fiber.Ctx) error {
 		return fiber.ErrBadRequest
 	}
 
-	response, err := c.UseCase.GetStatusDistribution(ctx, request)
+	response, err := c.UseCase.GetStatusDistribution(ctx, request, middleware.DashboardAdminScope(ctx))
 	if err != nil {
 		return err
 	}

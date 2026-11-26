@@ -1,6 +1,7 @@
 package config
 
 import (
+	"github.com/paricorpdev/dashboard-pay2u-be/internal/client/msgateway"
 	"github.com/paricorpdev/dashboard-pay2u-be/internal/delivery/http/controller"
 	"github.com/paricorpdev/dashboard-pay2u-be/internal/delivery/http/middleware"
 	"github.com/paricorpdev/dashboard-pay2u-be/internal/delivery/http/route"
@@ -39,13 +40,16 @@ func Bootstrap(config *BootstrapConfig) {
 	// Use Case
 	jwtUseCase := usecase.NewJwtUseCase(config.Config, config.Log, config.Validate, redisRepository)
 	authUseCase := usecase.NewAuthUseCase(config.DB, config.Config, config.Log, config.Validate, jwtUseCase, userRepository, redisRepository)
-	merchantUseCase := usecase.NewMerchantUseCase(config.DB, config.Log, config.Validate, merchantRepository)
+	merchantService := msgateway.NewMerchantClient(config.Config.GetString("ms_gateway.base_url"))
+	merchantUseCase := usecase.NewMerchantUseCase(config.DB, config.Log, config.Validate, merchantRepository, userRepository, merchantService)
+	userUseCase := usecase.NewUserUseCase(config.DB, config.Log, config.Validate, userRepository, roleRepository)
 	rbacUseCase := usecase.NewRBACUseCase(config.DB, config.Log, roleRepository, permissionRepository)
 	analyticUseCase := usecase.NewAnalyticUseCase(config.DB, config.Log, transactionRepository, config.Config.GetString("app.timezone"))
 	transactionUseCase := usecase.NewTransactionUseCase(config.DB, config.Log, transactionRepository)
 
 	// Controller
 	authController := controller.NewAuthController(authUseCase, config.Log)
+	userController := controller.NewUserController(userUseCase, config.Log)
 	merchantController := controller.NewMerchantController(merchantUseCase, config.Log)
 	rbacController := controller.NewRBACController(rbacUseCase, config.Log)
 	analyticController := controller.NewAnalyticController(analyticUseCase, config.Log)
@@ -64,6 +68,7 @@ func Bootstrap(config *BootstrapConfig) {
 		RequestIDMiddleware:   requestIDMiddleware,
 		ResponseMiddleware:    responseMiddleware,
 		AuthController:        authController,
+		UserController:        userController,
 		MerchantController:    merchantController,
 		RBACController:        rbacController,
 		AnalyticController:    analyticController,

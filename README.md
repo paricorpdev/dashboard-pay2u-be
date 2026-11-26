@@ -14,7 +14,7 @@ Go backend service for the Pay2U Dashboard.
 # 1. Copy config
 cp config.yml.example config.yml
 
-# 2. Edit config.yml with your database credentials
+# 2. Edit config.yml with your database credentials and ms_gateway.base_url
 
 # 3. Run migrations
 go run ./cmd/migrate up
@@ -34,6 +34,8 @@ go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@lat
 ```bash
 go run ./cmd/migrate up
 ```
+
+Dashboard and MS must point to the same PostgreSQL database. Apply Dashboard migrations before the MS migration that adds the merchant-to-admin foreign key, then run the Dashboard seeder.
 
 To roll back only the latest migration:
 
@@ -67,6 +69,8 @@ go run ./cmd/seed
 ```
 
 The password is required; username and full name have defaults, and email is optional. Running the seeder again does not replace an existing account's password or profile, and does not duplicate its role or permissions. Run it after migrations and from this directory.
+
+Super Admins can list, create, update, and deactivate Admin accounts. Deactivation is soft so existing merchants retain their owner FK. Each admin and super admin has a server-generated MS key stored on the user record; the key is never returned to the frontend. The Dashboard backend sends the signed-in user's key to `ms-gateway-pay2u`. Both services must use the same PostgreSQL database so MS can validate the key against `users.ms_master_key`. Admins manage their own merchants and see transactions and analytics for those merchants; merchant records and credentials remain managed by MS.
 
 ## Project Structure
 

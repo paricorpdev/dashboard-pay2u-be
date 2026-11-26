@@ -4,6 +4,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 	"github.com/paricorpdev/dashboard-pay2u-be/internal/common/constants"
+	"github.com/paricorpdev/dashboard-pay2u-be/internal/delivery/http/middleware"
 	"github.com/paricorpdev/dashboard-pay2u-be/internal/exception"
 	"github.com/paricorpdev/dashboard-pay2u-be/internal/logger"
 	"github.com/paricorpdev/dashboard-pay2u-be/internal/model/payload"
@@ -23,6 +24,26 @@ func NewMerchantController(useCase *usecase.MerchantUseCase, log *logrus.Logger)
 	}
 }
 
+func (c *MerchantController) requireAdmin(ctx *fiber.Ctx) error {
+	auth := middleware.GetUser(ctx)
+	isAdmin := false
+	isSuperAdmin := false
+	for _, role := range auth.Roles {
+		isAdmin = isAdmin || role == constants.RoleAdmin
+		isSuperAdmin = isSuperAdmin || role == constants.RoleSuperAdmin
+	}
+	if isAdmin && !isSuperAdmin {
+		return nil
+	}
+
+	ctx.Locals(constants.Response, payload.ResponseInterface{
+		Status:       constants.ResponseNameError,
+		ResponseData: exception.NewHandleError(ctx, constants.ErrForbiddenAccess, fiber.ErrForbidden),
+	})
+	ctx.Status(fiber.StatusForbidden)
+	return fiber.ErrForbidden
+}
+
 func (c *MerchantController) GetOptions(ctx *fiber.Ctx) error {
 	options, err := c.UseCase.GetOptions(ctx)
 	if err != nil {
@@ -38,6 +59,10 @@ func (c *MerchantController) GetOptions(ctx *fiber.Ctx) error {
 }
 
 func (c *MerchantController) Create(ctx *fiber.Ctx) error {
+	if err := c.requireAdmin(ctx); err != nil {
+		return err
+	}
+
 	request := new(payload.CreateMerchantRequest)
 	if err := ctx.BodyParser(request); err != nil {
 		logger.WithContext(ctx, c.Log).Warnf("Failed to parse create merchant body: %+v", err)
@@ -59,6 +84,40 @@ func (c *MerchantController) Create(ctx *fiber.Ctx) error {
 		ResponseData: response,
 	})
 	ctx.Status(fiber.StatusCreated)
+	return nil
+}
+
+func (c *MerchantController) RotateAPIKey(ctx *fiber.Ctx) error {
+	if err := c.requireAdmin(ctx); err != nil {
+		return err
+	}
+	id, err := uuid.Parse(ctx.Params("id"))
+	if err != nil {
+		return c.badRequest(ctx)
+	}
+	response, err := c.UseCase.RotateAPIKey(ctx, id)
+	if err != nil {
+		return err
+	}
+	ctx.Locals(constants.Response, payload.ResponseInterface{Status: constants.ResponseNameSuccess, ResponseData: response})
+	ctx.Status(fiber.StatusOK)
+	return nil
+}
+
+func (c *MerchantController) RotateWebhookSecret(ctx *fiber.Ctx) error {
+	if err := c.requireAdmin(ctx); err != nil {
+		return err
+	}
+	id, err := uuid.Parse(ctx.Params("id"))
+	if err != nil {
+		return c.badRequest(ctx)
+	}
+	response, err := c.UseCase.RotateWebhookSecret(ctx, id)
+	if err != nil {
+		return err
+	}
+	ctx.Locals(constants.Response, payload.ResponseInterface{Status: constants.ResponseNameSuccess, ResponseData: response})
+	ctx.Status(fiber.StatusOK)
 	return nil
 }
 
@@ -113,6 +172,10 @@ func (c *MerchantController) FindByID(ctx *fiber.Ctx) error {
 }
 
 func (c *MerchantController) Update(ctx *fiber.Ctx) error {
+	if err := c.requireAdmin(ctx); err != nil {
+		return err
+	}
+
 	id, err := uuid.Parse(ctx.Params("id"))
 	if err != nil {
 		logger.WithContext(ctx, c.Log).Warnf("Invalid merchant id param for update: %s", ctx.Params("id"))
@@ -149,6 +212,10 @@ func (c *MerchantController) Update(ctx *fiber.Ctx) error {
 }
 
 func (c *MerchantController) Delete(ctx *fiber.Ctx) error {
+	if err := c.requireAdmin(ctx); err != nil {
+		return err
+	}
+
 	id, err := uuid.Parse(ctx.Params("id"))
 	if err != nil {
 		logger.WithContext(ctx, c.Log).Warnf("Invalid merchant id param for delete: %s", ctx.Params("id"))
@@ -173,38 +240,12 @@ func (c *MerchantController) Delete(ctx *fiber.Ctx) error {
 	return nil
 }
 
-func (c *MerchantController) RegenerateSecret(ctx *fiber.Ctx) error {
-	id, err := uuid.Parse(ctx.Params("id"))
-	if err != nil {
-		logger.WithContext(ctx, c.Log).Warnf("Invalid merchant id param for secret rotation: %s", ctx.Params("id"))
-		ctx.Locals(constants.Response, payload.ResponseInterface{
-			Status:       constants.ResponseNameError,
-			ResponseData: exception.NewHandleError(ctx, constants.ErrInvalidRequest, fiber.ErrBadRequest),
-		})
-		ctx.Status(fiber.StatusBadRequest)
-		return fiber.ErrBadRequest
-	}
-
-	request := new(payload.RegenerateMerchantSecretRequest)
-	if err := ctx.BodyParser(request); err != nil {
-		logger.WithContext(ctx, c.Log).Warnf("Failed to parse regenerate secret body: %+v", err)
-		ctx.Locals(constants.Response, payload.ResponseInterface{
-			Status:       constants.ResponseNameError,
-			ResponseData: exception.NewHandleError(ctx, constants.ErrInvalidRequest, fiber.ErrBadRequest),
-		})
-		ctx.Status(fiber.StatusBadRequest)
-		return fiber.ErrBadRequest
-	}
-
-	response, err := c.UseCase.RegenerateSecret(ctx, id, request)
-	if err != nil {
-		return err
-	}
-
+func (c *MerchantController) badRequest(ctx *fiber.Ctx) error {
+	logger.WithContext(ctx, c.Log).Warnf("Invalid merchant id param: %s", ctx.Params("id"))
 	ctx.Locals(constants.Response, payload.ResponseInterface{
-		Status:       constants.ResponseNameSuccess,
-		ResponseData: response,
+		Status:       constants.ResponseNameError,
+		ResponseData: exception.NewHandleError(ctx, constants.ErrInvalidRequest, fiber.ErrBadRequest),
 	})
-	ctx.Status(fiber.StatusOK)
-	return nil
+	ctx.Status(fiber.StatusBadRequest)
+	return fiber.ErrBadRequest
 }

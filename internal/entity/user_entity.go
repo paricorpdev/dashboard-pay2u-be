@@ -11,6 +11,7 @@ type User struct {
 	Username     string     `gorm:"column:username;not null;uniqueIndex"`
 	Email        *string    `gorm:"column:email;uniqueIndex"`
 	PasswordHash string     `gorm:"column:password_hash;not null"`
+	MSMasterKey  *string    `gorm:"column:ms_master_key"`
 	FullName     string     `gorm:"column:full_name;not null"`
 	Status       string     `gorm:"column:status;not null;default:ACTIVE"`
 	LastLoginAt  *time.Time `gorm:"column:last_login_at"`

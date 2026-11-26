@@ -52,12 +52,12 @@ func (u *AnalyticUseCase) parseMerchantID(merchantIDStr *string) *uuid.UUID {
 	return &parsed
 }
 
-func (u *AnalyticUseCase) GetSummary(ctx *fiber.Ctx, request *payload.AnalyticFilterRequest) (*payload.AnalyticSummaryResponse, error) {
+func (u *AnalyticUseCase) GetSummary(ctx *fiber.Ctx, request *payload.AnalyticFilterRequest, adminID *uuid.UUID) (*payload.AnalyticSummaryResponse, error) {
 	month, year := helpers.ResolveMonthYear(request.Month, request.Year)
 	startDate, endDate, _ := helpers.GetMonthDateRange(year, month, u.TimeLocation)
 	merchantUUID := u.parseMerchantID(request.MerchantID)
 
-	summaryResult, err := u.TransactionRepository.GetMonthlySummary(u.DB, startDate, endDate, merchantUUID)
+	summaryResult, err := u.TransactionRepository.GetMonthlySummary(u.DB, startDate, endDate, merchantUUID, adminID)
 	if err != nil {
 		logger.WithContext(ctx, u.Log).Errorf("Failed to query monthly summary: %+v", err)
 		ctx.Locals(constants.Response, payload.ResponseInterface{
@@ -71,12 +71,12 @@ func (u *AnalyticUseCase) GetSummary(ctx *fiber.Ctx, request *payload.AnalyticFi
 	return converter.SummaryToResponse(month, year, summaryResult), nil
 }
 
-func (u *AnalyticUseCase) GetDailyTrend(ctx *fiber.Ctx, request *payload.AnalyticFilterRequest) ([]payload.DailyTrendItem, error) {
+func (u *AnalyticUseCase) GetDailyTrend(ctx *fiber.Ctx, request *payload.AnalyticFilterRequest, adminID *uuid.UUID) ([]payload.DailyTrendItem, error) {
 	month, year := helpers.ResolveMonthYear(request.Month, request.Year)
 	startDate, endDate, daysInMonth := helpers.GetMonthDateRange(year, month, u.TimeLocation)
 	merchantUUID := u.parseMerchantID(request.MerchantID)
 
-	rawTrends, err := u.TransactionRepository.GetDailyTrend(u.DB, startDate, endDate, merchantUUID)
+	rawTrends, err := u.TransactionRepository.GetDailyTrend(u.DB, startDate, endDate, merchantUUID, adminID)
 	if err != nil {
 		logger.WithContext(ctx, u.Log).Errorf("Failed to query daily trend: %+v", err)
 		ctx.Locals(constants.Response, payload.ResponseInterface{
@@ -90,12 +90,12 @@ func (u *AnalyticUseCase) GetDailyTrend(ctx *fiber.Ctx, request *payload.Analyti
 	return converter.RawDailyTrendsToCompleteMonth(year, month, daysInMonth, rawTrends), nil
 }
 
-func (u *AnalyticUseCase) GetPaymentMethodDistribution(ctx *fiber.Ctx, request *payload.AnalyticFilterRequest) ([]payload.PaymentMethodDistributionItem, error) {
+func (u *AnalyticUseCase) GetPaymentMethodDistribution(ctx *fiber.Ctx, request *payload.AnalyticFilterRequest, adminID *uuid.UUID) ([]payload.PaymentMethodDistributionItem, error) {
 	month, year := helpers.ResolveMonthYear(request.Month, request.Year)
 	startDate, endDate, _ := helpers.GetMonthDateRange(year, month, u.TimeLocation)
 	merchantUUID := u.parseMerchantID(request.MerchantID)
 
-	summaryResult, err := u.TransactionRepository.GetMonthlySummary(u.DB, startDate, endDate, merchantUUID)
+	summaryResult, err := u.TransactionRepository.GetMonthlySummary(u.DB, startDate, endDate, merchantUUID, adminID)
 	if err != nil {
 		logger.WithContext(ctx, u.Log).Errorf("Failed to query summary for payment distribution: %+v", err)
 		ctx.Locals(constants.Response, payload.ResponseInterface{
@@ -106,7 +106,7 @@ func (u *AnalyticUseCase) GetPaymentMethodDistribution(ctx *fiber.Ctx, request *
 		return nil, fiber.ErrInternalServerError
 	}
 
-	rawDistribution, err := u.TransactionRepository.GetPaymentMethodDistribution(u.DB, startDate, endDate, merchantUUID)
+	rawDistribution, err := u.TransactionRepository.GetPaymentMethodDistribution(u.DB, startDate, endDate, merchantUUID, adminID)
 	if err != nil {
 		logger.WithContext(ctx, u.Log).Errorf("Failed to query payment method distribution: %+v", err)
 		ctx.Locals(constants.Response, payload.ResponseInterface{
@@ -120,12 +120,12 @@ func (u *AnalyticUseCase) GetPaymentMethodDistribution(ctx *fiber.Ctx, request *
 	return converter.RawPaymentMethodToDistribution(rawDistribution, summaryResult.TotalCount), nil
 }
 
-func (u *AnalyticUseCase) GetStatusDistribution(ctx *fiber.Ctx, request *payload.AnalyticFilterRequest) ([]payload.StatusDistributionItem, error) {
+func (u *AnalyticUseCase) GetStatusDistribution(ctx *fiber.Ctx, request *payload.AnalyticFilterRequest, adminID *uuid.UUID) ([]payload.StatusDistributionItem, error) {
 	month, year := helpers.ResolveMonthYear(request.Month, request.Year)
 	startDate, endDate, _ := helpers.GetMonthDateRange(year, month, u.TimeLocation)
 	merchantUUID := u.parseMerchantID(request.MerchantID)
 
-	summaryResult, err := u.TransactionRepository.GetMonthlySummary(u.DB, startDate, endDate, merchantUUID)
+	summaryResult, err := u.TransactionRepository.GetMonthlySummary(u.DB, startDate, endDate, merchantUUID, adminID)
 	if err != nil {
 		logger.WithContext(ctx, u.Log).Errorf("Failed to query summary for status distribution: %+v", err)
 		ctx.Locals(constants.Response, payload.ResponseInterface{
@@ -136,7 +136,7 @@ func (u *AnalyticUseCase) GetStatusDistribution(ctx *fiber.Ctx, request *payload
 		return nil, fiber.ErrInternalServerError
 	}
 
-	rawDistribution, err := u.TransactionRepository.GetStatusDistribution(u.DB, startDate, endDate, merchantUUID)
+	rawDistribution, err := u.TransactionRepository.GetStatusDistribution(u.DB, startDate, endDate, merchantUUID, adminID)
 	if err != nil {
 		logger.WithContext(ctx, u.Log).Errorf("Failed to query status distribution: %+v", err)
 		ctx.Locals(constants.Response, payload.ResponseInterface{

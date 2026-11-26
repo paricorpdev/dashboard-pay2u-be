@@ -21,7 +21,7 @@ database:
     password: "password"
     host: "localhost"
     port: 5432
-    name: "dashboard_pay2u"
+    name: "pay2u" # Must point to the same database used by ms-gateway-pay2u
     sslmode: "disable"
     pool:
       idle: 10
@@ -39,3 +39,6 @@ seed:
     password: "" # Set before running go run ./cmd/seed
     full_name: "System Administrator"
     email: "admin@example.com"
+
+ms_gateway:
+  base_url: "http://127.0.0.1:8081"

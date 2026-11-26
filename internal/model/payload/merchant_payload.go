@@ -9,6 +9,7 @@ type MerchantResponse struct {
 	ID            string  `json:"id"`
 	Code          string  `json:"code"`
 	Name          string  `json:"name"`
+	AdminID       *string `json:"admin_id,omitempty"`
 	ApiKey        string  `json:"api_key"`
 	WebhookUrl    *string `json:"webhook_url"`
 	WebhookSecret *string `json:"webhook_secret"`
@@ -19,19 +20,14 @@ type MerchantResponse struct {
 
 type CreateMerchantRequest struct {
 	Code       string  `json:"code" validate:"required,min=3,max=50"`
-	Name       string  `json:"name" validate:"required,min=3,max=100"`
+	Name       string  `json:"name" validate:"required,min=2,max=100"`
 	WebhookUrl *string `json:"webhook_url" validate:"omitempty,url"`
 }
 
 type UpdateMerchantRequest struct {
-	Name       string  `json:"name" validate:"required,min=3,max=100"`
+	Name       string  `json:"name" validate:"required,min=2,max=100"`
 	WebhookUrl *string `json:"webhook_url" validate:"omitempty,url"`
 	IsActive   *bool   `json:"is_active" validate:"required"`
-}
-
-type RegenerateMerchantSecretRequest struct {
-	RotateApiKey        bool `json:"rotate_api_key"`
-	RotateWebhookSecret bool `json:"rotate_webhook_secret"`
 }
 
 type QueryMerchantRequest struct {

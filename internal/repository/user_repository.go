@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"github.com/paricorpdev/dashboard-pay2u-be/internal/common/constants"
 	"github.com/paricorpdev/dashboard-pay2u-be/internal/entity"
 	"github.com/paricorpdev/dashboard-pay2u-be/internal/model/payload"
 	"math"
@@ -63,6 +64,63 @@ func (r *UserRepository) ValidateExistByUsername(db *gorm.DB, username string, i
 	var count int64
 	err := db.Model(&entity.User{}).Where("username = ? AND id != ?", username, id).Count(&count).Error
 	return count > 0, err
+}
+
+func (r *UserRepository) ValidateExistByEmail(db *gorm.DB, email string, id uuid.UUID) (bool, error) {
+	var count int64
+	err := db.Model(&entity.User{}).Where("email = ? AND id != ?", email, id).Count(&count).Error
+	return count > 0, err
+}
+
+func (r *UserRepository) FindAdminByID(db *gorm.DB, id uuid.UUID) (*entity.User, error) {
+	var user entity.User
+	err := db.Preload("Roles.Permissions").
+		Where("users.id = ?", id).
+		Where("EXISTS (SELECT 1 FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE ur.user_id = users.id AND r.code = ?)", constants.RoleAdmin).
+		Where("NOT EXISTS (SELECT 1 FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE ur.user_id = users.id AND r.code = ?)", constants.RoleSuperAdmin).
+		First(&user).Error
+	return &user, err
+}
+
+func (r *UserRepository) FindAdmins(db *gorm.DB, request *payload.QueryAdminRequest) ([]entity.User, *payload.PageMetadata, error) {
+	page := request.Page
+	if page < 1 {
+		page = 1
+	}
+	perPage := request.Limit
+	if perPage < 1 {
+		perPage = 10
+	}
+	if perPage > 100 {
+		perPage = 100
+	}
+
+	query := db.Model(&entity.User{}).
+		Preload("Roles.Permissions").
+		Where("EXISTS (SELECT 1 FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE ur.user_id = users.id AND r.code = ?)", constants.RoleAdmin).
+		Where("NOT EXISTS (SELECT 1 FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE ur.user_id = users.id AND r.code = ?)", constants.RoleSuperAdmin)
+	if search := strings.TrimSpace(request.Search); search != "" {
+		pattern := "%" + strings.ToLower(search) + "%"
+		query = query.Where("(LOWER(username) LIKE ? OR LOWER(full_name) LIKE ? OR LOWER(email) LIKE ?)", pattern, pattern, pattern)
+	}
+	if status := strings.TrimSpace(request.Status); status != "" {
+		query = query.Where("status = ?", strings.ToUpper(status))
+	}
+
+	var total int64
+	if err := query.Count(&total).Error; err != nil {
+		return nil, nil, err
+	}
+	metadata := &payload.PageMetadata{Page: page, PerPage: perPage, TotalData: total}
+	if total > 0 {
+		metadata.TotalPage = int64(math.Ceil(float64(total) / float64(perPage)))
+	}
+
+	var users []entity.User
+	if err := query.Order("created_at DESC").Offset((page - 1) * perPage).Limit(perPage).Find(&users).Error; err != nil {
+		return nil, nil, err
+	}
+	return users, metadata, nil
 }
 
 func (r *UserRepository) FindAll(db *gorm.DB, request *payload.PageUserRequest, response *payload.WebResponse[[]entity.User]) error {

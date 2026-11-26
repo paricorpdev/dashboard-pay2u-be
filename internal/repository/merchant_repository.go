@@ -9,6 +9,7 @@ import (
 	"github.com/paricorpdev/dashboard-pay2u-be/internal/model/payload"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type MerchantRepository struct {
@@ -28,6 +29,17 @@ func (r *MerchantRepository) FindByID(db *gorm.DB, merchant *entity.Merchant, id
 
 func (r *MerchantRepository) FindByCode(db *gorm.DB, merchant *entity.Merchant, code string) error {
 	return db.Where("code = ?", code).First(merchant).Error
+}
+
+// UpsertFromMS keeps the dashboard's transaction-to-merchant association table
+// aligned with the authoritative merchant record managed by ms-gateway-pay2u.
+func (r *MerchantRepository) UpsertFromMS(db *gorm.DB, merchant *entity.Merchant) error {
+	return db.Clauses(clause.OnConflict{
+		Columns: []clause.Column{{Name: "id"}},
+		DoUpdates: clause.AssignmentColumns([]string{
+			"code", "name", "admin_id", "api_key", "webhook_url", "webhook_secret", "is_active", "created_at", "updated_at",
+		}),
+	}).Create(merchant).Error
 }
 
 func (r *MerchantRepository) ExistsByCode(db *gorm.DB, code string) (bool, error) {

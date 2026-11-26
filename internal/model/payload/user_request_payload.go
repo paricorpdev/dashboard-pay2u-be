@@ -28,6 +28,28 @@ type CreateUserRequest struct {
 	RoleCodes []string `json:"role_codes" form:"role_codes" validate:"required,min=1,dive,max=50"`
 }
 
+type CreateAdminRequest struct {
+	Username string  `json:"username" validate:"required,min=3,max=100"`
+	Password string  `json:"password" validate:"required,min=8,max=100"`
+	Email    *string `json:"email" validate:"omitempty,email,max=150"`
+	FullName string  `json:"full_name" validate:"required,max=150"`
+}
+
+type QueryAdminRequest struct {
+	Page   int    `query:"page"`
+	Limit  int    `query:"limit"`
+	Search string `query:"search"`
+	Status string `query:"status"`
+}
+
+type UpdateAdminRequest struct {
+	Username *string `json:"username" validate:"omitempty,min=3,max=100"`
+	Password *string `json:"password" validate:"omitempty,min=8,max=100"`
+	Email    *string `json:"email" validate:"omitempty,email,max=150"`
+	FullName *string `json:"full_name" validate:"omitempty,max=150"`
+	Status   *string `json:"status" validate:"omitempty,oneof=ACTIVE INACTIVE"`
+}
+
 type UpdateUserRequest struct {
 	UUID      uuid.UUID `json:"uuid" form:"uuid" validate:"required,uuid"`
 	Username  string    `json:"username" form:"username" validate:"max=100"`

@@ -37,7 +37,6 @@ const (
 	ErrMerchantCodeAlreadyExists   = "merchant code already exists"
 	ErrMerchantApiKeyAlreadyExists = "merchant api key already exists"
 	ErrMerchantHasTransactions     = "cannot delete merchant with existing transactions"
-	ErrFailedGenerateCredentials   = "failed to generate merchant credentials"
 	ErrTransactionNotFound         = "transaction not found"
 )
 

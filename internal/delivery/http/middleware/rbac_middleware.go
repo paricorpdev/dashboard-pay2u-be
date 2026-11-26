@@ -54,7 +54,7 @@ func NewRBACMiddleware(db *gorm.DB, log *logrus.Logger, permissionRepo *reposito
 				switch segment {
 				case "upload", "sync":
 					action = "create"
-				case "reset-password", "regenerate-secret":
+				case "reset-password":
 					action = "update"
 				case "activate":
 					action = "activate"

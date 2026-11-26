@@ -33,9 +33,9 @@ func NewTransactionUseCase(
 }
 
 // FindAll returns a paginated and filtered list of transactions.
-func (u *TransactionUseCase) FindAll(ctx *fiber.Ctx, req *payload.QueryTransactionRequest) (*payload.PageResponse[payload.TransactionResponse], error) {
+func (u *TransactionUseCase) FindAll(ctx *fiber.Ctx, req *payload.QueryTransactionRequest, adminID *uuid.UUID) (*payload.PageResponse[payload.TransactionResponse], error) {
 	var transactions []entity.Transaction
-	paging, err := u.TransactionRepository.FindAllWithFilter(u.DB, req, &transactions)
+	paging, err := u.TransactionRepository.FindAllWithFilter(u.DB, req, &transactions, adminID)
 	if err != nil {
 		logger.WithContext(ctx, u.Log).Errorf("Failed querying transactions: %+v", err)
 		ctx.Locals(constants.Response, payload.ResponseInterface{
@@ -53,9 +53,9 @@ func (u *TransactionUseCase) FindAll(ctx *fiber.Ctx, req *payload.QueryTransacti
 }
 
 // FindByID returns detailed transaction info including merchant and webhook dispatches.
-func (u *TransactionUseCase) FindByID(ctx *fiber.Ctx, id uuid.UUID) (*payload.TransactionDetailResponse, error) {
+func (u *TransactionUseCase) FindByID(ctx *fiber.Ctx, id uuid.UUID, adminID *uuid.UUID) (*payload.TransactionDetailResponse, error) {
 	var trx entity.Transaction
-	if err := u.TransactionRepository.FindByID(u.DB, &trx, id); err != nil {
+	if err := u.TransactionRepository.FindByID(u.DB, &trx, id, adminID); err != nil {
 		logger.WithContext(ctx, u.Log).Warnf("Transaction not found: %s", id.String())
 		ctx.Locals(constants.Response, payload.ResponseInterface{
 			Status:       constants.ResponseNameError,
