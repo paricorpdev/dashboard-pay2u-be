@@ -76,12 +76,13 @@ func (u *AuthUseCase) Login(ctx *fiber.Ctx, request *payload.LoginUserRequest) (
 
 	if user.Status != constants.StatusActive {
 		logger.WithContext(ctx, u.Log).Warnf("Inactive user tried to login: %s", request.Username)
+		suspendedErr := fiber.NewError(fiber.StatusLocked, constants.ErrUserInactive)
 		ctx.Locals(constants.Response, payload.ResponseInterface{
 			Status:       constants.ResponseNameError,
-			ResponseData: exception.NewHandleError(ctx, constants.ErrUserInactive, fiber.ErrForbidden),
+			ResponseData: exception.NewHandleError(ctx, constants.ErrUserInactive, suspendedErr),
 		})
-		ctx.Status(fiber.StatusForbidden)
-		return nil, fiber.ErrForbidden
+		ctx.Status(fiber.StatusLocked)
+		return nil, suspendedErr
 	}
 
 	if err := hashing.ComparePasswords(user.PasswordHash, request.Password); err != nil {
@@ -156,6 +157,15 @@ func (u *AuthUseCase) Refresh(ctx *fiber.Ctx, request *payload.RefreshTokenReque
 		})
 		ctx.Status(fiber.StatusUnauthorized)
 		return nil, fiber.ErrUnauthorized
+	}
+	if user.Status != constants.StatusActive {
+		suspendedErr := fiber.NewError(fiber.StatusLocked, constants.ErrUserInactive)
+		ctx.Locals(constants.Response, payload.ResponseInterface{
+			Status:       constants.ResponseNameError,
+			ResponseData: exception.NewHandleError(ctx, constants.ErrUserInactive, suspendedErr),
+		})
+		ctx.Status(fiber.StatusLocked)
+		return nil, suspendedErr
 	}
 
 	var roleCodes []string

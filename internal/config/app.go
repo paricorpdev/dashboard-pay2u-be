@@ -56,7 +56,7 @@ func Bootstrap(config *BootstrapConfig) {
 	transactionController := controller.NewTransactionController(transactionUseCase, config.Log)
 
 	// Middleware
-	authMiddleware := middleware.NewAuth(config.Log, config.Config, jwtUseCase)
+	authMiddleware := middleware.NewAuth(config.Log, config.Config, jwtUseCase, config.DB, userRepository)
 	rbacMiddleware := middleware.NewRBACMiddleware(config.DB, config.Log, permissionRepository)
 	requestIDMiddleware := middleware.NewRequestIDMiddleware(config.Log)
 	responseMiddleware := middleware.NewResponseMiddleware()

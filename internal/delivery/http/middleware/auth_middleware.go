@@ -2,20 +2,23 @@ package middleware
 
 import (
 	"github.com/paricorpdev/dashboard-pay2u-be/internal/common/constants"
+	"github.com/paricorpdev/dashboard-pay2u-be/internal/entity"
 	"github.com/paricorpdev/dashboard-pay2u-be/internal/exception"
 	"github.com/paricorpdev/dashboard-pay2u-be/internal/helpers"
 	"github.com/paricorpdev/dashboard-pay2u-be/internal/model/payload"
+	"github.com/paricorpdev/dashboard-pay2u-be/internal/repository"
 	"github.com/paricorpdev/dashboard-pay2u-be/internal/usecase"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
+	"gorm.io/gorm"
 )
 
 const userLocalKey = constants.AuthUserLocalKey
 
-func NewAuth(log *logrus.Logger, config *viper.Viper, jwtUseCase *usecase.JwtUseCase) fiber.Handler {
+func NewAuth(log *logrus.Logger, config *viper.Viper, jwtUseCase *usecase.JwtUseCase, db *gorm.DB, userRepository *repository.UserRepository) fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
 		authorization := ctx.Get(fiber.HeaderAuthorization)
 		if authorization == "" {
@@ -47,6 +50,26 @@ func NewAuth(log *logrus.Logger, config *viper.Viper, jwtUseCase *usecase.JwtUse
 			})
 			ctx.Status(fiber.StatusUnauthorized)
 			return fiber.ErrUnauthorized
+		}
+
+		user := new(entity.User)
+		if err := userRepository.FindByID(db, user, claims.UUID, nil); err != nil {
+			log.Warnf("Failed to load authenticated user %s: %+v", claims.UUID, err)
+			ctx.Locals(constants.Response, payload.ResponseInterface{
+				Status:       constants.ResponseNameError,
+				ResponseData: exception.NewHandleError(ctx, constants.ErrUnauthorized, fiber.ErrUnauthorized),
+			})
+			ctx.Status(fiber.StatusUnauthorized)
+			return fiber.ErrUnauthorized
+		}
+		if user.Status != constants.StatusActive {
+			suspendedErr := fiber.NewError(fiber.StatusLocked, constants.ErrUserInactive)
+			ctx.Locals(constants.Response, payload.ResponseInterface{
+				Status:       constants.ResponseNameError,
+				ResponseData: exception.NewHandleError(ctx, constants.ErrUserInactive, suspendedErr),
+			})
+			ctx.Status(fiber.StatusLocked)
+			return suspendedErr
 		}
 
 		ctx.Locals(userLocalKey, payload.Auth{

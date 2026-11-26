@@ -26,7 +26,7 @@ const (
 	ErrUserNotFound                = "user not found"
 	ErrUserAlreadyExists           = "user already exists"
 	ErrEmailAlreadyExists          = "email already exists"
-	ErrUserInactive                = "user is inactive"
+	ErrUserInactive                = "Akun sedang ditangguhkan. Hubungi super admin untuk mengaktifkan kembali akun."
 	ErrRoleNotFound                = "role not found"
 	ErrUnauthorized                = "Unauthorized user"
 	ErrUsernameOrPassword          = "invalid username or password"
