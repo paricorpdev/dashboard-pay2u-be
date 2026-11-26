@@ -54,14 +54,18 @@ type RawStatusDist struct {
 }
 
 type DisbursementSummaryResult struct {
-	TotalCount             int64
-	TotalVolume            int64
-	SuccessCount           int64
-	WaitingSettlementCount int64
-	ProcessingCount        int64
-	FailedCount            int64
-	CancelledCount         int64
-	TotalAdminFee          int64
+	TotalCount              int64
+	TotalVolume             int64
+	SuccessCount            int64
+	WaitingSettlementCount  int64
+	WaitingSettlementAmount int64
+	ProcessingCount         int64
+	ProcessingAmount        int64
+	FailedCount             int64
+	FailedAmount            int64
+	CancelledCount          int64
+	CancelledAmount         int64
+	TotalAdminFee           int64
 }
 
 type RawDisbursementTrend struct {
@@ -238,7 +242,7 @@ func (r *TransactionRepository) GetPaymentMethodDistribution(db *gorm.DB, start 
 			COUNT(*) AS count,
 			COALESCE(SUM(amount_total), 0) AS amount
 		`).
-		Where("created_at >= ? AND created_at <= ?", start, end)
+		Where("created_at >= ? AND created_at <= ? AND status = ?", start, end, "SUCCESS")
 	query = filterTransactionsByAdmin(query, adminID)
 
 	if merchantID != nil {
@@ -285,9 +289,13 @@ func (r *TransactionRepository) GetDisbursementSummary(db *gorm.DB, start, end t
 		COALESCE(SUM(CASE WHEN status = 'SUCCESS' THEN amount ELSE 0 END), 0) AS total_volume,
 		COALESCE(SUM(CASE WHEN status = 'SUCCESS' THEN 1 ELSE 0 END), 0) AS success_count,
 		COALESCE(SUM(CASE WHEN status = 'WAITING_SETTLEMENT' THEN 1 ELSE 0 END), 0) AS waiting_settlement_count,
+		COALESCE(SUM(CASE WHEN status = 'WAITING_SETTLEMENT' THEN amount ELSE 0 END), 0) AS waiting_settlement_amount,
 		COALESCE(SUM(CASE WHEN status = 'PROCESSING' THEN 1 ELSE 0 END), 0) AS processing_count,
+		COALESCE(SUM(CASE WHEN status = 'PROCESSING' THEN amount ELSE 0 END), 0) AS processing_amount,
 		COALESCE(SUM(CASE WHEN status = 'FAILED' THEN 1 ELSE 0 END), 0) AS failed_count,
+		COALESCE(SUM(CASE WHEN status = 'FAILED' THEN amount ELSE 0 END), 0) AS failed_amount,
 		COALESCE(SUM(CASE WHEN status = 'CANCELLED' THEN 1 ELSE 0 END), 0) AS cancelled_count,
+		COALESCE(SUM(CASE WHEN status = 'CANCELLED' THEN amount ELSE 0 END), 0) AS cancelled_amount,
 		COALESCE(SUM(CASE WHEN status = 'SUCCESS' THEN amount_admin ELSE 0 END), 0) AS total_admin_fee
 	`).Where("created_at >= ? AND created_at <= ?", start, end)
 	query = filterDisbursementsByAdmin(query, adminID)
@@ -330,7 +338,7 @@ func (r *TransactionRepository) GetDisbursementBankDistribution(db *gorm.DB, sta
 		COALESCE(NULLIF(BTRIM(beneficiary_bank_name), ''), 'Tidak diketahui') AS bank_name,
 		COUNT(*) AS count,
 		COALESCE(SUM(CASE WHEN status = 'SUCCESS' THEN amount ELSE 0 END), 0) AS amount
-	`).Where("created_at >= ? AND created_at <= ?", start, end)
+	`).Where("created_at >= ? AND created_at <= ? AND status = ?", start, end, "SUCCESS")
 	query = filterDisbursementsByAdmin(query, adminID)
 	if merchantID != nil {
 		query = query.Where("merchant_id = ?", *merchantID)

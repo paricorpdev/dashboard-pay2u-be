@@ -118,7 +118,7 @@ func (u *AnalyticUseCase) GetPaymentMethodDistribution(ctx *fiber.Ctx, request *
 		return nil, fiber.ErrInternalServerError
 	}
 
-	return converter.RawPaymentMethodToDistribution(rawDistribution, summaryResult.TotalCount), nil
+	return converter.RawPaymentMethodToDistribution(rawDistribution, summaryResult.SuccessCount), nil
 }
 
 func (u *AnalyticUseCase) GetStatusDistribution(ctx *fiber.Ctx, request *payload.AnalyticFilterRequest, adminID *uuid.UUID) ([]payload.StatusDistributionItem, error) {
@@ -172,17 +172,21 @@ func (u *AnalyticUseCase) GetDisbursementSummary(ctx *fiber.Ctx, request *payloa
 		successRate = math.Round(float64(result.SuccessCount)/float64(result.TotalCount)*10000) / 100
 	}
 	return &payload.DisbursementSummaryResponse{
-		Month:                  month,
-		Year:                   year,
-		TotalVolumeAmount:      result.TotalVolume,
-		TotalDisbursementCount: result.TotalCount,
-		SuccessCount:           result.SuccessCount,
-		WaitingSettlementCount: result.WaitingSettlementCount,
-		ProcessingCount:        result.ProcessingCount,
-		FailedCount:            result.FailedCount,
-		CancelledCount:         result.CancelledCount,
-		SuccessRate:            successRate,
-		TotalAdminFee:          result.TotalAdminFee,
+		Month:                   month,
+		Year:                    year,
+		TotalVolumeAmount:       result.TotalVolume,
+		TotalDisbursementCount:  result.TotalCount,
+		SuccessCount:            result.SuccessCount,
+		WaitingSettlementCount:  result.WaitingSettlementCount,
+		WaitingSettlementAmount: result.WaitingSettlementAmount,
+		ProcessingCount:         result.ProcessingCount,
+		ProcessingAmount:        result.ProcessingAmount,
+		FailedCount:             result.FailedCount,
+		FailedAmount:            result.FailedAmount,
+		CancelledCount:          result.CancelledCount,
+		CancelledAmount:         result.CancelledAmount,
+		SuccessRate:             successRate,
+		TotalAdminFee:           result.TotalAdminFee,
 	}, nil
 }
 

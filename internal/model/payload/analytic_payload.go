@@ -43,17 +43,21 @@ type StatusDistributionItem struct {
 }
 
 type DisbursementSummaryResponse struct {
-	Month                  int     `json:"month"`
-	Year                   int     `json:"year"`
-	TotalVolumeAmount      int64   `json:"total_volume_amount"`
-	TotalDisbursementCount int64   `json:"total_disbursement_count"`
-	SuccessCount           int64   `json:"success_count"`
-	WaitingSettlementCount int64   `json:"waiting_settlement_count"`
-	ProcessingCount        int64   `json:"processing_count"`
-	FailedCount            int64   `json:"failed_count"`
-	CancelledCount         int64   `json:"cancelled_count"`
-	SuccessRate            float64 `json:"success_rate"`
-	TotalAdminFee          int64   `json:"total_admin_fee"`
+	Month                   int     `json:"month"`
+	Year                    int     `json:"year"`
+	TotalVolumeAmount       int64   `json:"total_volume_amount"`
+	TotalDisbursementCount  int64   `json:"total_disbursement_count"`
+	SuccessCount            int64   `json:"success_count"`
+	WaitingSettlementCount  int64   `json:"waiting_settlement_count"`
+	WaitingSettlementAmount int64   `json:"waiting_settlement_amount"`
+	ProcessingCount         int64   `json:"processing_count"`
+	ProcessingAmount        int64   `json:"processing_amount"`
+	FailedCount             int64   `json:"failed_count"`
+	FailedAmount            int64   `json:"failed_amount"`
+	CancelledCount          int64   `json:"cancelled_count"`
+	CancelledAmount         int64   `json:"cancelled_amount"`
+	SuccessRate             float64 `json:"success_rate"`
+	TotalAdminFee           int64   `json:"total_admin_fee"`
 }
 
 type DisbursementDailyTrendItem struct {
