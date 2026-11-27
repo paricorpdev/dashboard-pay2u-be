@@ -70,7 +70,7 @@ go run ./cmd/seed
 
 The password is required; username and full name have defaults, and email is optional. Running the seeder again does not replace an existing account's password or profile, and does not duplicate its role or permissions. Run it after migrations and from this directory.
 
-Super Admins can list, create, update, and deactivate Admin accounts. Deactivation is soft so existing merchants retain their owner FK. Each admin and super admin has a server-generated MS key stored on the user record; the key is never returned to the frontend. The Dashboard backend sends the signed-in user's key to `ms-gateway-pay2u`. Both services must use the same PostgreSQL database so MS can validate the key against `users.ms_master_key`. Admins manage their own merchants and see transactions and analytics for those merchants; merchant records and credentials remain managed by MS.
+Super Admins can list, create, update, and deactivate Admin accounts. Deactivation is soft so existing merchants retain their owner FK. Each admin and super admin has a server-generated MS key stored on the user record; the key is never returned to the frontend. The Dashboard backend sends the signed-in user's key to `ms-gateway-pay2u`. Both services must use the same PostgreSQL database so MS can validate the key against `users.ms_master_key`. Admins manage their own merchants and see transactions and analytics for those merchants; merchant records and credentials remain managed by MS. Disbursement list and detail requests are also proxied to MS, which owns the disbursement records.
 
 ## Project Structure
 

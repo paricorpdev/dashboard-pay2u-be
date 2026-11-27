@@ -42,6 +42,7 @@ func Bootstrap(config *BootstrapConfig) {
 	authUseCase := usecase.NewAuthUseCase(config.DB, config.Config, config.Log, config.Validate, jwtUseCase, userRepository, redisRepository)
 	merchantService := msgateway.NewMerchantClient(config.Config.GetString("ms_gateway.base_url"))
 	merchantUseCase := usecase.NewMerchantUseCase(config.DB, config.Log, config.Validate, merchantRepository, userRepository, merchantService)
+	disbursementUseCase := usecase.NewDisbursementUseCase(config.DB, config.Log, userRepository, merchantService)
 	userUseCase := usecase.NewUserUseCase(config.DB, config.Log, config.Validate, userRepository, roleRepository)
 	rbacUseCase := usecase.NewRBACUseCase(config.DB, config.Log, roleRepository, permissionRepository)
 	analyticUseCase := usecase.NewAnalyticUseCase(config.DB, config.Log, transactionRepository, config.Config.GetString("app.timezone"))
@@ -54,6 +55,7 @@ func Bootstrap(config *BootstrapConfig) {
 	rbacController := controller.NewRBACController(rbacUseCase, config.Log)
 	analyticController := controller.NewAnalyticController(analyticUseCase, config.Log)
 	transactionController := controller.NewTransactionController(transactionUseCase, config.Log)
+	disbursementController := controller.NewDisbursementController(disbursementUseCase, config.Log)
 
 	// Middleware
 	authMiddleware := middleware.NewAuth(config.Log, config.Config, jwtUseCase, config.DB, userRepository)
@@ -62,17 +64,18 @@ func Bootstrap(config *BootstrapConfig) {
 	responseMiddleware := middleware.NewResponseMiddleware()
 
 	routeConfig := route.RouteConfig{
-		App:                   config.App,
-		AuthMiddleware:        authMiddleware,
-		RBACMiddleware:        rbacMiddleware,
-		RequestIDMiddleware:   requestIDMiddleware,
-		ResponseMiddleware:    responseMiddleware,
-		AuthController:        authController,
-		UserController:        userController,
-		MerchantController:    merchantController,
-		RBACController:        rbacController,
-		AnalyticController:    analyticController,
-		TransactionController: transactionController,
+		App:                    config.App,
+		AuthMiddleware:         authMiddleware,
+		RBACMiddleware:         rbacMiddleware,
+		RequestIDMiddleware:    requestIDMiddleware,
+		ResponseMiddleware:     responseMiddleware,
+		AuthController:         authController,
+		UserController:         userController,
+		MerchantController:     merchantController,
+		RBACController:         rbacController,
+		AnalyticController:     analyticController,
+		TransactionController:  transactionController,
+		DisbursementController: disbursementController,
 	}
 	routeConfig.Setup()
 }

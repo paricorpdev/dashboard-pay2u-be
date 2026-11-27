@@ -30,6 +30,16 @@ type MerchantListQuery struct {
 	SortDir  string
 }
 
+type DisbursementListQuery struct {
+	Page       int
+	PerPage    int
+	Search     string
+	Status     string
+	MerchantID string
+	Month      int
+	Year       int
+}
+
 type APIError struct {
 	StatusCode int
 	Message    string
@@ -128,6 +138,41 @@ func (c *MerchantClient) RotateWebhookSecret(ctx context.Context, masterKey, id 
 		return nil, err
 	}
 	return &merchant, nil
+}
+
+func (c *MerchantClient) ListDisbursements(ctx context.Context, masterKey string, query DisbursementListQuery) (*payload.PageResponse[payload.DisbursementResponse], error) {
+	values := url.Values{}
+	values.Set("page", strconv.Itoa(query.Page))
+	values.Set("per_page", strconv.Itoa(query.PerPage))
+	if query.Search != "" {
+		values.Set("search", query.Search)
+	}
+	if query.Status != "" {
+		values.Set("status", query.Status)
+	}
+	if query.MerchantID != "" {
+		values.Set("merchant_id", query.MerchantID)
+	}
+	if query.Month > 0 {
+		values.Set("month", strconv.Itoa(query.Month))
+	}
+	if query.Year > 0 {
+		values.Set("year", strconv.Itoa(query.Year))
+	}
+	var response payload.PageResponse[payload.DisbursementResponse]
+	if err := c.do(ctx, masterKey, http.MethodGet, "/api/v1/admin/disbursements/", values, nil, &response); err != nil {
+		return nil, err
+	}
+	return &response, nil
+}
+
+func (c *MerchantClient) GetDisbursement(ctx context.Context, masterKey, id string) (*payload.DisbursementDetailResponse, error) {
+	var response payload.DisbursementDetailResponse
+	path := "/api/v1/admin/disbursements/" + url.PathEscape(id)
+	if err := c.do(ctx, masterKey, http.MethodGet, path, nil, nil, &response); err != nil {
+		return nil, err
+	}
+	return &response, nil
 }
 
 func (c *MerchantClient) do(ctx context.Context, masterKey, method, path string, query url.Values, body any, output any) error {
